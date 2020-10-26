@@ -56,7 +56,7 @@ while True:
             pop.send_spikes_to_synapses(pop_list[index - 1].spiked_neurons)
             pop.membrane_additive_input(np.sum(pop.spike_array, 2))
             pop.compute_spikes()
-            pop.treshold_additive_input(np.sum(pop.spike_array, 2)**2)
+            pop.threshold_additive_input(np.sum(pop.spike_array, 2)**2)
     
     
     video_1 = np.concatenate((population_1.spiked_neurons, population_2.spiked_neurons), 1)

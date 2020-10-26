@@ -389,7 +389,7 @@ class Soma_AS_with_projection_weights(Soma_AS):
     
                 self.template_rolls = np.array(self.template_rolls)
     
-                self.weights = np.random.normal(weight_mean, weight_SD, self.spike_array.shape)
+                self.weights = np.abs(np.random.normal(weight_mean, weight_SD, self.spike_array.shape))
         def send_spikes_to_synapses(self, inputs):
             print(inputs.shape)
             if self.max_level <= 1:
@@ -480,21 +480,21 @@ class Automata_2d:
 
             self.neighbourhood[:,:,i0] = input_rolled
 
-class Convways_game_of_life(Automata_2d):
+class Conways_game_of_life(Automata_2d):
     def __init__(self, size_x, size_y):
-        neighbourhood_template = np.ones(3,3)
-        neighbourhood_template[1] = 0
-        super.__init__(size_x, size_y, neighbourhood_template)
+        neighbourhood_template = np.ones((3,3))
+        neighbourhood_template[1,1] = 0
+        super().__init__(size_x, size_y, neighbourhood_template)
         
     def input_method(self, inputs, input_type):
         if input_type == "+":
-            self.universe += inputs
+            self.universe = (self.universe + inputs)
             self.universe = self.universe >= 1
         elif (input_type == "-"):
-            self.universe -= inputs
+            self.universe = (self.universe - inputs)
             self.universe = self.universe == 1
         elif (input_type == "XOR"):
-            self.universe += inputs
+            self.universe = self.universe + inputs
             self.universe = self.universe == 1
             
         
@@ -503,7 +503,8 @@ class Convways_game_of_life(Automata_2d):
         
         self.send_state_to_neighbourhood()
         
-        neighbourhood_sum = np.sum(self.neighbourhood)
+        neighbourhood_sum = np.sum(self.neighbourhood,2)
+        print(neighbourhood_sum)
         
         # we only need to compute the rules that leads to living cells
         # rule 2
