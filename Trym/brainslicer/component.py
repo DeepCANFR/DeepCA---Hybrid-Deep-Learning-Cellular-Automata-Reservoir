@@ -39,5 +39,6 @@ class Component(object):
 
     def set_state(self, state):
         raise NotImplementedError
+    
     def set_parameters(self, parameters):
         self.parameters = parameters

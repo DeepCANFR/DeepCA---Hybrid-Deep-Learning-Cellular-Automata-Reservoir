@@ -1,10 +1,11 @@
-import dask 
-
+import dask
 
 
 '''
 Neurons
 '''
+
+
 class NeuronsFullyDistributed(object):
     name = ""
     components = {}
@@ -13,13 +14,13 @@ class NeuronsFullyDistributed(object):
     def __init__(self, client):
         self.client = client
 
-
-    def construct_neuron(self,soma_type, soma_parameter_dict, position, ID, client ):
+    def construct_neuron(self, soma_type, soma_parameter_dict, position, ID, client):
 
         self.components = {}
         self.ID = ID
         self.soma_ID = soma_parameter_dict["ID"]
-        self.components[self.soma_ID] = self.client.submit(soma_type, soma_parameter_dict, actors = True)
+        self.components[self.soma_ID] = self.client.submit(
+            soma_type, soma_parameter_dict, actors=True)
         self.connections = []
 
         self.connected_neurons = {}
@@ -39,11 +40,12 @@ class NeuronsFullyDistributed(object):
             component_ID = component_parameters["ID"]
             component_type = component_parameters["type"]
 
-            self.components[component_ID] = self.client.submit(component_type, component_parameters, actors = True)
+            self.components[component_ID] = self.client.submit(
+                component_type, component_parameters, actors=True)
 
         self.get_component_results()
-        #self.reconstruct_component_states(neuron_data)
-        #self.get_results()
+        # self.reconstruct_component_states(neuron_data)
+        # self.get_results()
 
     def set_soma(self, soma_data):
         # Use this to change the soma of the neurons for testing the effect of different somatic compartments on
@@ -56,13 +58,14 @@ class NeuronsFullyDistributed(object):
 
         soma_type = soma_data[1]["parameters"]["type"]
         soma_parameter_dict = soma_data[1]["parameters"]
-        self.components[self.soma_ID] = self.client.submit(soma_type, soma_parameter_dict, actors = True)
+        self.components[self.soma_ID] = self.client.submit(
+            soma_type, soma_parameter_dict, actors=True)
         self.components[self.soma_ID] = self.components[self.soma_ID].result()
         self.soma = self.components[self.soma_ID]
 
         self.components[self.soma_ID].set_state(soma_data[1]["state"])
-        self.components[self.soma_ID].set_parameters(soma_data[1]["parameters"])
-
+        self.components[self.soma_ID].set_parameters(
+            soma_data[1]["parameters"])
 
     def set_connected_neurons(self, connected_neurons):
         self.connected_neurons = connected_neurons
@@ -79,13 +82,11 @@ class NeuronsFullyDistributed(object):
             self.futures.append(future)
         self.get_results()
 
-
     def interface_futures(self, connection_parameters, neuron):
         '''
         Create the components used in connections between neurons
         The parameter_dict needs to be a OrderedDict containing the parameter_dicts of each component
         '''
-
 
         self.connected_neurons[neuron.ID] = neuron
         #self.connection_parameters[neuron.ID] = connection_parameters
@@ -95,11 +96,11 @@ class NeuronsFullyDistributed(object):
             component_parameters = connection_parameters[key]
             component_ID = component_parameters["ID"]
             component_type = component_parameters["type"]
-            self.components[component_ID] = self.client.submit(component_type, component_parameters, actors = True)
+            self.components[component_ID] = self.client.submit(
+                component_type, component_parameters, actors=True)
             connection.append(component_ID)
         connection.append(neuron.ID)
         self.connections.append(connection)
-
 
     def get_component_results(self):
         '''
@@ -118,35 +119,33 @@ class NeuronsFullyDistributed(object):
                 #print(index, ID)
                 if index == 0:
                     pass
-                    #print(ID)
+                    # print(ID)
                     #somas = self.components[ID]
                     #component = self.components[ID]
-                    #print(ID)
+                    # print(ID)
                     #future = component.interface(somas)
-                    #future.result()
-                    #print(ID)
+                    # future.result()
+                    # print(ID)
                 elif index == len(connection)-1:
                     previous_component_ID = connection[index - 1]
                     previous_component = self.components[previous_component_ID]
 
-                    future = connection_end.soma.reconstruct_interface(previous_component)
+                    future = connection_end.soma.reconstruct_interface(
+                        previous_component)
                     future.result()
                 else:
                     component = self.components[ID]
                     previous_component_ID = connection[index - 1]
                     previous_component = self.components[previous_component_ID]
 
-                    future = component.reconstruct_interface(previous_component)
+                    future = component.reconstruct_interface(
+                        previous_component)
                     future.result()
-
-
-
 
     def connect_components(self):
         '''
         This function connects the different components according to the connection sequence defined in interface_future function
         '''
-
 
         for connection in self.connections:
             connection_end_ID = connection[-1]
@@ -155,13 +154,13 @@ class NeuronsFullyDistributed(object):
                 #print(index, ID)
                 if index == 0:
                     pass
-                    #print(ID)
+                    # print(ID)
                     #somas = self.components[ID]
                     #component = self.components[ID]
-                    #print(ID)
+                    # print(ID)
                     #future = component.interface(somas)
-                    #future.result()
-                    #print(ID)
+                    # future.result()
+                    # print(ID)
                 elif index == len(connection)-1:
                     previous_component_ID = connection[index - 1]
                     previous_component = self.components[previous_component_ID]
@@ -182,10 +181,9 @@ class NeuronsFullyDistributed(object):
                     if component_type == Dendritic_Arbor:
                         future = component.set_boundry_conditions()
                         future.result()
-                        future = component.kill_connections_based_on_distance(self.position - connection_end.position)
+                        future = component.kill_connections_based_on_distance(
+                            self.position - connection_end.position)
                         future.result()
-
-
 
     def compute_new_values(self):
         self.futures = []
@@ -197,7 +195,7 @@ class NeuronsFullyDistributed(object):
         self.futures = []
         for key in self.components:
             future = self.components[key].update_current_values()
-            #future.result()
+            # future.result()
             self.futures.append(future)
 
     def get_results(self):
@@ -225,7 +223,6 @@ class NeuronsFullyDistributed(object):
         return neuron_data
 
 
-
 class InputNeurons(NeuronsFullyDistributed):
     interfacable = 0
     parameters = {}
@@ -238,17 +235,20 @@ class InputNeurons(NeuronsFullyDistributed):
         self.components = {}
         self.ID = ID
         self.soma_ID = input_parameter_dict["ID"]
-        self.components[self.soma_ID] = self.client.submit(Input_Class, input_parameter_dict, actors = True)
+        self.components[self.soma_ID] = self.client.submit(
+            Input_Class, input_parameter_dict, actors=True)
 
         self.connections = []
 
         self.connected_neurons = {}
         self.position = 0
+
     def compute_new_values(self, inputs):
         self.futures = []
         for key in self.components:
             if key == self.soma_ID:
-                future = self.components[self.soma_ID].compute_new_values(inputs)
+                future = self.components[self.soma_ID].compute_new_values(
+                    inputs)
                 self.futures.append(future)
             else:
                 future = self.components[key].compute_new_values()
