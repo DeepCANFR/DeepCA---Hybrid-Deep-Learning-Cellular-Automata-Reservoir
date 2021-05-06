@@ -1,9 +1,12 @@
+'''
+    Delay lines
+'''
+
 import numpy as ncp 
 from component import Component
-'''
-Delay lines
-'''
-class Delay_Line(Component):
+
+
+class DelayLine(Component):
     interfacable = 0
     def __init__(self, parameter_dict):
         super().__init__(parameter_dict)

@@ -4,7 +4,7 @@ from help_functions import remove_neg_values
 '''
 Dendritic spines
 '''
-class Dendritic_Spine_Maas(Component):
+class DendriticSpineMaas(Component):
     interfacable = 0
     def __init__(self, parameter_dict):
         super().__init__(parameter_dict)

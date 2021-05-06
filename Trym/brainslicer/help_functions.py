@@ -3,7 +3,7 @@
 '''
 Help functions
 '''
-class Unique_ID_Dict_Creator(object):
+class UniqueIdDictCreator(object):
     def __init__(self, ID_length):
         self.ID_length = ID_length
         self.existing_IDs = []

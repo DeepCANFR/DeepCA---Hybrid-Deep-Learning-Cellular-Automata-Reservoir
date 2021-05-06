@@ -3,7 +3,7 @@ import numpy as ncp
 '''
 Spike generators
 '''
-class Poisson_Spike_Generator(object):
+class PoissonSpikeGenerator(object):
 
     def __init__(self, scale, size, refractory_period):
         self.refractory_period = refractory_period
@@ -27,5 +27,5 @@ if __name__ == "__main__":
     param = {"scale":1,
              "size":(100,100),
              "refractory_period":3}
-    psg = Poisson_Spike_Generator(**param)
+    psg = PoissonSpikeGenerator(**param)
     print()

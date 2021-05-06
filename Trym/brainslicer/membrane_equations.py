@@ -2,7 +2,7 @@
 '''
 Membrane equations
 '''
-class Integrate_and_fire_neuron_membrane_function(object):
+class IntegrateAndFireNeuronMembraneFunction(object):
     def __init__(self, leakage_reversal_potential, membrane_resistance, membrane_time_constant, summed_inputs):
         self.leakage_reversal_potential = leakage_reversal_potential    # E_m
         self.membrane_resistance = membrane_resistance                  # R_m
@@ -15,7 +15,7 @@ class Integrate_and_fire_neuron_membrane_function(object):
 
         return delta_V
 
-class Circuit_Equation(object):
+class CircuitEquation(object):
     def __init__(self, input_resistance, time_constant, summed_inputs, constant_input = 0):
 
         self.input_resistance = input_resistance
@@ -30,7 +30,7 @@ class Circuit_Equation(object):
 
         return delta_V
 
-class Izhivechik_Equation(object):
+class IzhivechikEquation(object):
     def __init__(self, a, b, summed_inputs, population_size):
         self.a = a
         self.b = b
