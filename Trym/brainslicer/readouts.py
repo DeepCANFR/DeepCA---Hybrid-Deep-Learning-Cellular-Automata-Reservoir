@@ -4,7 +4,7 @@ import numpy as ncp
 Readouts
 '''
 
-class Readout_P_Delta(object):
+class ReadoutPDelta(object):
     def __init__(self, parameter_dict):
         self.parameters = parameter_dict
 

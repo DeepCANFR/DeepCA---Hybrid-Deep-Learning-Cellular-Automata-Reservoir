@@ -5,7 +5,7 @@ import dask
 '''
 Neurons
 '''
-class Neurons_fully_distributed(object):
+class NeuronsFullyDistributed(object):
     name = ""
     components = {}
     interfacable = 0
@@ -226,7 +226,7 @@ class Neurons_fully_distributed(object):
 
 
 
-class Input_Neurons(Neurons_fully_distributed):
+class InputNeurons(NeuronsFullyDistributed):
     interfacable = 0
     parameters = {}
 

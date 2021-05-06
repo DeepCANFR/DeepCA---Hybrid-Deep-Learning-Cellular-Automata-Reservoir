@@ -12,7 +12,7 @@ class Network(object):
             soma_type = neuron_data["soma_type"]
             position =  neuron_data["position"]
             soma_ID = neuron_data["ID"]
-            self.neurons[ID] = Neurons_fully_distributed(soma_type, soma_parameter_dict, position, ID)
+            self.neurons[ID] = NeuronsFullyDistributed(soma_type, soma_parameter_dict, position, ID)
 
 
         for neuron_ID in network_data:

@@ -31,3 +31,9 @@ class ForwardEuler_cupy(object):
         dt = self.time_step
         unew = self.u[k] + dt*self.f(self.u[k],self.t[k])
         return unew
+
+class CircuitEquation(object):
+    pass
+
+class IzhivechikEquation(object):
+    pass

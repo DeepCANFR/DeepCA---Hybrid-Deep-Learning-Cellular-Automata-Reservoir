@@ -2,10 +2,10 @@
 import numpy as ncp
 from component import Component
 '''
-Arborizers
+    Arborizers
 '''
 
-class Dendritic_Arbor(Component):
+class DendriticArbor(Component):
     interfacable = 0
     kill_mask = 0
     def __init__(self, parameter_dict):

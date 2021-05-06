@@ -4,7 +4,7 @@ from component import Component
 '''
 Input classes
 '''
-class Inputs_Distribute_Single_spike(Component):
+class InputsDistributeSingleSpike(Component):
     parameters = {}
     interfacable = 0
     def __init__(self, parameter_dict):

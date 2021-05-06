@@ -1,14 +1,14 @@
 import numpy as ncp
 from component import Component 
 from support_classes import Interfacable_Array
-from membrane_equations import Integrate_and_fire_neuron_membrane_function, 
-from differential_equation_solvers import RungeKutta2_cupy, Circuit_Equation, Izhivechik_Equation
+from membrane_equations import IntegrateAndFireNeuronMembraneFunction
+from differential_equation_solvers import RungeKutta2_cupy, CircuitEquation, IzhivechikEquation
 from help_functions import remove_neg_values
 
 '''
 Somas
 '''
-class Base_Integrate_and_Fire_Soma(Component):
+class BaseIntegrateAndFireSoma(Component):
     interfacable = 0
     current_somatic_voltages = 0
     current_spiked_neurons = 0
@@ -128,7 +128,7 @@ class Base_Integrate_and_Fire_Soma(Component):
         return(2)
 
 
-class Circuit_Equation_Integrate_and_Fire_Soma(Base_Integrate_and_Fire_Soma):
+class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
     def __init__(self, parameter_dict):
         super().__init__(parameter_dict)
         ##
@@ -303,7 +303,7 @@ class Circuit_Equation_Integrate_and_Fire_Soma(Base_Integrate_and_Fire_Soma):
         background_current = self.state["background_current"]
         #######################################################################
 
-        membrane_function = Circuit_Equation(input_resistance, membrane_time_constant, self.summed_inputs, background_current)
+        membrane_function = CircuitEquation(input_resistance, membrane_time_constant, self.summed_inputs, background_current)
         self.membrane_solver = RungeKutta2_cupy(membrane_function, self.parameters["time_step"])
 
     def compute_new_values(self):
@@ -337,7 +337,7 @@ class Circuit_Equation_Integrate_and_Fire_Soma(Base_Integrate_and_Fire_Soma):
         # return 1
 
 
-class Izhikevich_Soma(Base_Integrate_and_Fire_Soma):
+class IzhikevichSoma(BaseIntegrateAndFireSoma):
     def __init__(self, parameter_dict):
         super().__init__(parameter_dict)
         population_size = self.parameters["population_size"]

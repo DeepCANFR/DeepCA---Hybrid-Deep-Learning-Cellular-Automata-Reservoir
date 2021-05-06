@@ -2,9 +2,9 @@ import numpy as ncp
 from help_functions import remove_neg_values
 
 '''
-Dendritic spines
+    Dendritic spines
 '''
-class Dendritic_Spine_Maas(Component):
+class DendriticSpineMaas(Component):
     interfacable = 0
     def __init__(self, parameter_dict):
         super().__init__(parameter_dict)
@@ -45,7 +45,7 @@ class Dendritic_Spine_Maas(Component):
         current_synaptic_input = self.state["current_synaptic_input"]
         last_input_since_spike = self.state["last_input_since_spike"]
         time_constant = self.parameters["time_constant"]
-        ########################################################################
+        
         # compute new time since last spiked first to decay current value
         time_since_last_spike += time_step
 
@@ -68,7 +68,6 @@ class Dendritic_Spine_Maas(Component):
         current_synaptic_input = self.state["current_synaptic_input"]
         new_synaptic_output = self.state["new_synaptic_output"]
         indexes = self.state["indexes"]
-        ########################################################################
 
         current_synaptic_output[indexes] = new_synaptic_output
         current_synaptic_input[indexes] = self.external_component.interfacable
