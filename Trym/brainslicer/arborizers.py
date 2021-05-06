@@ -25,7 +25,7 @@ class DendriticArbor(Component):
         self.state["axonal_hillock_spikes_array"] = ncp.zeros(
             external_component_read_variable_shape)
 
-        ##
+
         projection_template = self.parameters["projection_template"]
         axonal_hillock_spikes_array = self.state["axonal_hillock_spikes_array"]
 
@@ -108,7 +108,7 @@ class DendriticArbor(Component):
         kill_mask = self.state["kill_mask"]
         template_rolls = self.state["template_rolls"]
         boundry_conditions = self.parameters["boundry_conditions"]
-        ########################################################################
+
         if boundry_conditions == "closed":
             for index, roll in enumerate(template_rolls):
                 if roll[0] > 0:
@@ -131,7 +131,7 @@ class DendriticArbor(Component):
         kill_mask = self.state["kill_mask"]
         C = self.parameters["distance_based_connection_probability"]["C"]
         lambda_parameter = self.parameters["distance_based_connection_probability"]["lambda_parameter"]
-        ########################################################################
+
 
         nr_of_rolls = template_rolls.shape[0]
         base_distances = ncp.ones(nr_of_rolls)
@@ -157,7 +157,7 @@ class DendriticArbor(Component):
         template_rolls = self.state["template_rolls"]
         kill_mask = self.state["kill_mask"]
         new_spike_array = self.state["new_spike_array"]
-        ########################################################################
+
 
         if max_level <= 1:
             new_spike_array[:, :] = axonal_hillock_spikes_array[:, :]
@@ -179,7 +179,7 @@ class DendriticArbor(Component):
         current_spike_array = self.state["current_spike_array"]
         axonal_hillock_spikes_array = self.state["axonal_hillock_spikes_array"]
         new_spike_array = self.state["new_spike_array"]
-        ########################################################################
+
 
         if max_level <= 1:
             current_spike_array[:, :] = axonal_hillock_spikes_array

@@ -31,7 +31,6 @@ class BaseIntegrateAndFireSoma(Component):
         population_size = self.parameters["population_size"]
         refractory_period = self.parameters["refractory_period"]
 
-        ########################################################################
 
         self.state["time_since_last_spike"] = ncp.ones(
             population_size) + refractory_period + 1
@@ -84,7 +83,7 @@ class BaseIntegrateAndFireSoma(Component):
         time_since_last_spike = self.state["time_since_last_spike"]
         new_somatic_voltages = self.state["new_somatic_voltages"]
         reset_voltage = self.state["reset_voltage"]
-        #####################################################################
+
         non_spike_mask = new_spiked_neurons == 0
         time_since_last_spike *= non_spike_mask
 
@@ -95,7 +94,7 @@ class BaseIntegrateAndFireSoma(Component):
         new_somatic_voltages = self.state["new_somatic_voltages"]
         dead_cells_location = self.state["dead_cells_location"]
         new_spiked_neurons = self.state["new_spiked_neurons"]
-        #####################################################################
+
         # destroy values in dead cells
         new_somatic_voltages *= dead_cells_location
         new_spiked_neurons *= dead_cells_location
@@ -105,7 +104,7 @@ class BaseIntegrateAndFireSoma(Component):
         time_since_last_spike = self.state["time_since_last_spike"]
         refractory_period = self.parameters["refractory_period"]
         reset_voltage = self.state["reset_voltage"]
-        #####################################################################
+
         # set somatic voltages to the reset value if within refractory period
         new_somatic_voltages *= time_since_last_spike > refractory_period
         new_somatic_voltages += (time_since_last_spike <=
@@ -125,7 +124,7 @@ class BaseIntegrateAndFireSoma(Component):
         current_spiked_neurons = self.state["current_spiked_neurons"]
         new_somatic_voltages = self.state["new_somatic_voltages"]
         new_spiked_neurons = self.state["new_spiked_neurons"]
-        #####################################################################
+
         self.inputs.update()
         summed_inputs[:, :] = self.inputs.get_sum()
         #print("summed inputs in update_current_values ",ncp.amax(summed_inputs))
@@ -138,39 +137,36 @@ class BaseIntegrateAndFireSoma(Component):
 class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
     def __init__(self, parameter_dict):
         super().__init__(parameter_dict)
-        ##
+
         population_size = self.parameters["population_size"]
-        #######################################################################
+
 
         if self.parameters["reset_voltage"]["distribution"] == "homogenous":
             self.state["reset_voltage"] = self.parameters["reset_voltage"]["value"]
         elif self.parameters["reset_voltage"]["distribution"] == "normal":
-            ##
             mean = self.parameters["reset_voltage"]["mean"]
             SD = self.parameters["reset_voltage"]["SD"]
-            ####################################################################
+
             self.state["reset_voltage"] = ncp.random.normal(
                 mean, SD, population_size)
 
-            ##
             reset_voltage = self.state["reset_voltage"]
-            ####################################################################
+
             if self.parameters["reset_voltage"]["pos_neg_uniformity"] == "positive":
                 remove_neg_values(reset_voltage, mean, SD)
         elif self.parameters["reset_voltage"]["distribution"] == "uniform":
-            ##
             low = self.parameters["reset_voltage"]["low"]
             high = self.parameters["reset_voltage"]["high"]
-            ####################################################################
+
             self.state["reset_voltage"] = ncp.random.uniform(
                 low, high, population_size)
 
         elif self.parameters["reset_voltage"]["distribution"] == "Izhikevich":
             self.state["reset_voltage"] = ncp.zeros(population_size)
             self.state["reset_voltage"] += self.parameters["reset_voltage"]["base_value"]
-            ##
+
             membrane_recovery_multiplier = self.parameters["reset_voltage"]["multiplier_value"]
-            ####################################################################
+
 
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
@@ -181,32 +177,32 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         if self.parameters["membrane_time_constant"]["distribution"] == "homogenous":
             self.state["membrane_time_constant"] = self.parameters["membrane_time_constant"]["value"]
         elif self.parameters["membrane_time_constant"]["distribution"] == "normal":
-            ##
+
             mean = self.parameters["membrane_time_constant"]["mean"]
             SD = self.parameters["membrane_time_constant"]["SD"]
-            ####################################################################
+
             self.state["membrane_time_constant"] = ncp.random.normal(
                 mean, SD, population_size)
 
-            ##
+
             membrane_time_constant = self.state["membrane_time_constant"]
-            ####################################################################
+
             if self.parameters["membrane_time_constant"]["pos_neg_uniformity"] == "positive":
                 remove_neg_values(membrane_time_constant, mean, SD)
         elif self.parameters["membrane_time_constant"]["distribution"] == "uniform":
-            ##
+
             low = self.parameters["membrane_time_constant"]["low"]
             high = self.parameters["membrane_time_constant"]["high"]
-            ####################################################################
+
             self.state["membrane_time_constant"] = ncp.random.uniform(
                 low, high, population_size)
         elif self.parameters["membrane_time_constant"]["distribution"] == "Izhikevich":
             self.state["membrane_time_constant"] = ncp.zeros(population_size)
             self.state["membrane_time_constant"] += self.parameters["membrane_time_constant"]["base_value"]
 
-            ##
+            
             membrane_recovery_multiplier = self.parameters["membrane_time_constant"]["multiplier_value"]
-            ####################################################################
+            
 
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
@@ -217,23 +213,23 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         if self.parameters["input_resistance"]["distribution"] == "homogenous":
             self.state["input_resistance"] = self.parameters["input_resistance"]["value"]
         elif self.parameters["input_resistance"]["distribution"] == "normal":
-            ##
+            
             mean = self.parameters["input_resistance"]["mean"]
             SD = self.parameters["input_resistance"]["SD"]
-            ####################################################################
+            
             self.state["input_resistance"] = ncp.random.normal(
                 mean, SD, population_size)
 
-            ##
+            
             input_resistance = self.state["input_resistance"]
-            ####################################################################
+            
             if self.parameters["input_resistance"]["pos_neg_uniformity"] == "positive":
                 remove_neg_values(input_resistance, mean, SD)
         elif self.parameters["input_resistance"]["distribution"] == "uniform":
-            ##
+            
             low = self.parameters["input_resistance"]["low"]
             high = self.parameters["input_resistance"]["high"]
-            ####################################################################
+            
             self.state["input_resistance"] = ncp.random.uniform(
                 low, high, population_size)
         elif self.parameters["input_resistance"]["distribution"] == "Izhikevich":
@@ -253,16 +249,16 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
             self.state["threshold"] = ncp.random.normal(
                 mean, SD, population_size)
 
-            ##
+
             threshold = self.state["threshold"]
-            ####################################################################
+
             if self.parameters["threshold"]["pos_neg_uniformity"] == "positive":
                 remove_neg_values(threshold, mean, SD)
         elif self.parameters["threshold"]["distribution"] == "uniform":
-            ##
+
             low = self.parameters["threshold"]["low"]
             high = self.parameters["threshold"]["high"]
-            ####################################################################
+
             self.state["threshold"] = ncp.random.uniform(
                 low, high, population_size)
 
@@ -283,16 +279,16 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
             self.state["background_current"] = ncp.random.normal(
                 mean, SD, population_size)
 
-            ##
+            
             background_current = self.state["background_current"]
-            ####################################################################
+            
             if self.parameters["background_current"]["pos_neg_uniformity"] == "positive":
                 remove_neg_values(background_current, mean, SD)
         elif self.parameters["background_current"]["distribution"] == "uniform":
-            ##
+
             low = self.parameters["background_current"]["low"]
             high = self.parameters["background_current"]["high"]
-            ####################################################################
+
             self.state["background_current"] = ncp.random.uniform(
                 low, high, population_size)
         elif self.parameters["background_current"]["distribution"] == "Izhikevich":
@@ -303,9 +299,9 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
             background_current_multiplier = self.parameters["background_current"]["multiplier_value"]
             background_current_variance = background_current_multiplier * random_variable
             self.state["background_current"] += background_current_variance
-        ##
+        
         reset_voltage = self.state["reset_voltage"]
-        ########################################################################
+        
 
         self.state["current_somatic_voltages"] = ncp.ones(
             population_size) * reset_voltage
@@ -318,7 +314,7 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         input_resistance = self.state["input_resistance"]
         membrane_time_constant = self.state["membrane_time_constant"]
         background_current = self.state["background_current"]
-        #######################################################################
+        
 
         membrane_function = CircuitEquation(
             input_resistance, membrane_time_constant, self.summed_inputs, background_current)
@@ -335,7 +331,6 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         new_spiked_neurons = self.state["new_spiked_neurons"]
         threshold = self.state["threshold"]
         dead_cells_location = self.state["dead_cells_location"]
-        #####################################################################
 
         time_since_last_spike += time_step
         new_somatic_voltages += self.membrane_solver.advance(
@@ -444,7 +439,7 @@ class IzhikevichSoma(BaseIntegrateAndFireSoma):
             self.state["reset_voltage"] += reset_voltage_variance
 
         reset_voltage = self.state["reset_voltage"]
-        #######################################################################
+
 
         self.state["current_somatic_voltages"] = ncp.ones(
             population_size) * reset_voltage
@@ -464,7 +459,7 @@ class IzhikevichSoma(BaseIntegrateAndFireSoma):
         summed_inputs = self.state["summed_inputs"]
         membrane_recovery = self.state["membrane_recovery"]
         resting_potential_variable = self.state["resting_potential_variable"]
-        #################################################################################
+
 
         membrane_function = Izhivechik_Equation(
             membrane_recovery, resting_potential_variable, summed_inputs, population_size)
@@ -484,7 +479,7 @@ class IzhikevichSoma(BaseIntegrateAndFireSoma):
         summed_inputs = self.state["summed_inputs"]
         time_since_last_spike = self.state["time_since_last_spike"]
         reset_recovery_variable = self.state["reset_recovery_variable"]
-        #################################################################################
+
 
         time_since_last_spike += time_step
 
@@ -520,7 +515,7 @@ class IzhikevichSoma(BaseIntegrateAndFireSoma):
     def update_current_values(self):
         current_u = self.state["current_u"]
         new_u = self.state["new_u"]
-        ########################################################################
+
         super().update_current_values()
         current_u[:, :] = new_u[:, :]
         # print("update")

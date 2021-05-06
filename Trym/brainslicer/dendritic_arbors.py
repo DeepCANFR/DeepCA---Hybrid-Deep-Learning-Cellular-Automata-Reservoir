@@ -56,7 +56,7 @@ class DynamicalAxonalTerminalMarkramEtal1998(Component):
 
             resting_utilization_of_synaptic_efficacy = self.state[
                 "resting_utilization_of_synaptic_efficacy"]
-            #
+
             negative_values = resting_utilization_of_synaptic_efficacy <= 0
             replacement_values = ncp.random.uniform(
                 mean - SD, mean + SD, population_size)
@@ -82,7 +82,7 @@ class DynamicalAxonalTerminalMarkramEtal1998(Component):
 
             synapse_type = self.parameters["synapse_type"]
             weight_matrix = self.state["weight_matrix"]
-            #
+
 
             if synapse_type == "excitatory":
                 # to do: find better solution for switching values
@@ -164,7 +164,7 @@ class DynamicalAxonalTerminalMarkramEtal1998(Component):
 
         tau_recovery = self.state["tau_recovery"]
         tau_facil = self.state["tau_facil"]
-        #
+
         if ncp.any(tau_recovery <= 0) or ncp.any(tau_facil <= 0) or ncp.any(resting_utilization_of_synaptic_efficacy <= 0):
             print("unsuccefull at removing negative values")
             sys.exit(0)

@@ -17,7 +17,7 @@ class DelayLine(Component):
 
     def interface(self, external_component):
         delay_in_compute_steps = self.state["delay_in_compute_steps"]
-        ########################################################################
+
 
         self.external_component = external_component
         external_component_read_variable = self.external_component.interfacable
@@ -43,7 +43,7 @@ class DelayLine(Component):
         delay_line = self.state["delay_line"]
         new_spike_output = self.state["new_spike_output"]
         spike_source = self.state["spike_source"]
-        ########################################################################
+
 
         delay_line[:, :, :] = ncp.roll(delay_line, 1, axis=2)
         new_spike_output[:, :] = delay_line[:, :, -1]
@@ -56,7 +56,7 @@ class DelayLine(Component):
         current_spike_output = self.state["current_spike_output"]
         new_spike_output = self.state["new_spike_output"]
         spike_source = self.state["spike_source"]
-        ########################################################################
+
         current_spike_output[:, :] = new_spike_output
         spike_source[:, :] = self.external_component.interfacable
         # print("update")
