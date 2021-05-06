@@ -2,7 +2,8 @@ import numpy as ncp
 from component import Component 
 from support_classes import Interfacable_Array
 from membrane_equations import IntegrateAndFireNeuronMembraneFunction
-from differential_equation_solvers import RungeKutta2_cupy, CircuitEquation, IzhivechikEquation
+from differential_equation_solvers import RungeKutta2_cupy
+from membrane_equations import CircuitEquation, IzhivechikEquation
 from help_functions import remove_neg_values
 
 '''
