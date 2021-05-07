@@ -1,14 +1,14 @@
 import numpy as ncp
 
 class Component(object):
-    interfacable = 0
-    component_IDs = []
-    parameters = {}
-    state = {}
     '''
     This is the base class for all components
     Every component must implement the functions given below
     '''
+    interfacable = 0
+    component_IDs = []
+    parameters = {}
+    state = {}
 
     def __init__(self, parameter_dict):
         self.parameters = parameter_dict
@@ -39,5 +39,6 @@ class Component(object):
 
     def set_state(self, state):
         raise NotImplementedError
+    
     def set_parameters(self, parameters):
         self.parameters = parameters
