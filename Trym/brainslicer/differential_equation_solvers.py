@@ -1,7 +1,7 @@
 '''
 Differential equiation solvers
 '''
-
+import numpy as ncp
 
 class RungeKutta2(object):
     def __init__(self, f, time_step):

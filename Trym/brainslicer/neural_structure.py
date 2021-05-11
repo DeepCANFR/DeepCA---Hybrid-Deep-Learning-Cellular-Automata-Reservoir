@@ -1,4 +1,5 @@
 import numpy as ncp
+import time
 
 class NeuralStructure(object):
 

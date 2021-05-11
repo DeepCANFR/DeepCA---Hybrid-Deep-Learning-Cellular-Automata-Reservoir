@@ -1,28 +1,29 @@
+import brainslicer as rm
+import matplotlib.pyplot as plt
+#import tensorflow as tf
+from scipy import stats
+import dask
+from dask.distributed import Client, LocalCluster
+#from dask.distributed import performance_report
+import numpy as ncp
+import sys
+
+import numpy as np
+import numpy as ncp
+import cv2
+
+import cloudpickle
+import pickle
+import time
+
 if __name__ == '__main__':
-    import parallel_realistic_module_V2 as rm
-    import matplotlib.pyplot as plt
-    #import tensorflow as tf
-    from scipy import stats
-    import dask
-    from dask.distributed import Client, LocalCluster
-    from dask.distributed import performance_report
-
-    import sys
-
-    import numpy as np
-    import numpy as ncp
-    import cv2
-
-    import cloudpickle
-    import pickle
-    import time
+  
 
     spike_trains_base = ncp.load("spike_trains_base.npy")
     spike_trains_jittered = ncp.load("spike_trains_jittered.npy")
     simulation_length = 2000
     distances = [0, 0.01, 0.02, 0.04]
-    train_path_name = r"C:\Users\trymlind\OsloMet\Stefano Nichele - DeepCA OsloMet\Trym\DeepCA\Code\DeepCA---Hybrid-Deep-Learning-Cellular-Automata-Reservoir\Projects\Alife node complexity LSTM\Spike_train_pairs"
-
+   
     stop_simulation = False
 
     for distance_nr in range(4):
@@ -39,11 +40,11 @@ if __name__ == '__main__':
 
                 #simulation_length = len(stimulation_train)
                 #stimulation_train[1000:] = 0
-                with open('network.pkl', 'rb') as handle:
+                with open('test_network.pkl', 'rb') as handle:
                     network_dict = cloudpickle.load(handle)
                 print("loaded network")
 
-                with open('inputs.pkl', 'rb') as handle:
+                with open('test_inputs.pkl', 'rb') as handle:
                     input_dict = cloudpickle.load(handle)
                 print("loaded input network")
                 # homogenous_Circuit_equation_somas_1
@@ -61,7 +62,7 @@ if __name__ == '__main__':
                 neuron_populations = {}
                 # re create the base neurons and all their components
                 for key in network_dict:
-                    neuron_populations[key] = rm.Neurons_fully_distributed(client)
+                    neuron_populations[key] = rm.NeuronsFullyDistributed(client)
                     neuron_populations[key].reconstruct_neuron(network_dict[key])
                 # ensure that every neuron has access to the the other neurons
                 for key in neuron_populations:
@@ -80,7 +81,7 @@ if __name__ == '__main__':
 
                 input_populations = {}
                 for key in input_dict:
-                    input_populations[key] = rm.Input_Neurons(client)
+                    input_populations[key] = rm.InputNeurons(client)
                     input_populations[key].reconstruct_neuron(input_dict[key])
                 for key in input_populations:
                     input_populations[key].set_connected_neurons(neuron_populations)

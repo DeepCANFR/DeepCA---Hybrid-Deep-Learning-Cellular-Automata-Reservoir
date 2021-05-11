@@ -16,34 +16,35 @@ import sys
 
 from collections import OrderedDict
 
-from differential_equation_solvers import RungeKutta2, ForwardEuler
+#import .differential_equation_solvers
+from .differential_equation_solvers import RungeKutta2, ForwardEuler
 
-from membrane_equations import IntegrateAndFireNeuronMembraneFunction, CircuitEquation, IzhivechikEquation
+from .membrane_equations import IntegrateAndFireNeuronMembraneFunction, CircuitEquation, IzhivechikEquation
 
-from spike_generators import PoissonSpikeGenerator
+from .spike_generators import PoissonSpikeGenerator
 
-from support_classes import InterfacableArray
-from component import NeuralStructure
+from .support_classes import InterfacableArray
+from .neural_structure import NeuralStructure
 
-from somas import BaseIntegrateAndFireSoma, CircuitEquationIntegrateAndFireSoma, IzhikevichSoma
+from .somas import BaseIntegrateAndFireSoma, CircuitEquationIntegrateAndFireSoma, IzhikevichSoma
 
-from dendritic_arbors import DynamicalAxonalTerminalMarkramEtal1998
+from .dendritic_arbors import DynamicalAxonalTerminalMarkramEtal1998
 
-from dendritic_spines import DendriticSpineMaas
+from .dendritic_spines import DendriticSpineMaas
 
-from arborizers import DendriticArbor
+from .arborizers import DendriticArbor
 
-from delay_lines import DelayLine
+from .delay_lines import DelayLine
 
-from neurons import NeuronsFullyDistributed, InputNeurons
+from .neurons import NeuronsFullyDistributed, InputNeurons
 
-from inputs import InputsDistributeSingleSpike
+from .inputs import InputsDistributeSingleSpike
 
-from readouts import ReadoutPDelta
+from .readouts import ReadoutPDelta
 
-from reconstructors import Network
+from .reconstructors import Network
 
-from help_functions import UniqueIdDictCreator
+from .help_functions import UniqueIdDictCreator
 
 
 VERSION = "0.0.1"

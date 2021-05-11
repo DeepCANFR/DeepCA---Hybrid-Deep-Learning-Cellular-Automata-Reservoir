@@ -1,12 +1,13 @@
 
+from brainslicer.neural_structure import NeuralStructure
 import numpy as ncp
-from help_functions import remove_neg_values
+from .help_functions import remove_neg_values
 '''
     Axonal arbors
 '''
 
 
-class DynamicalAxonalTerminalMarkramEtal1998(Component):
+class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
     interfacable = 0
 
     def __init__(self, parameter_dict):

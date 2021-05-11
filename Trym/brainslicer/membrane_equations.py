@@ -1,4 +1,4 @@
-
+import numpy as ncp
 '''
 Membrane equations
 '''

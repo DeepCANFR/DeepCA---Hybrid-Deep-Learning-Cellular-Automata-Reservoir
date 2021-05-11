@@ -1,12 +1,12 @@
 import numpy as ncp
-from help_functions import remove_neg_values
-
+from .help_functions import remove_neg_values
+from .neural_structure import NeuralStructure
 '''
     Dendritic spines
 '''
 
 
-class DendriticSpineMaas(Component):
+class DendriticSpineMaas(NeuralStructure):
     interfacable = 0
 
     def __init__(self, parameter_dict):

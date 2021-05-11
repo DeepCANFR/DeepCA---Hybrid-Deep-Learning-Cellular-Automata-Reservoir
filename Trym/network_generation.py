@@ -1,20 +1,20 @@
 
 import pickle
 
-from ..Trym import brainslicer as rm
+import brainslicer as rm
 import matplotlib.pyplot as plt
 #import tensorflow as tf
 from scipy import stats
 import dask
 from dask.distributed import Client, LocalCluster
-from dask.distributed import performance_report
+#from dask.distributed import performance_report
 from collections import OrderedDict
 
 import sys
 
 import numpy as np
 import numpy as ncp
-import cv2
+#import cv2
 
 
 '''
@@ -46,7 +46,7 @@ Somas
 # Excitatory (E)
 # Excitatory (E)
 # E_soma_parameters = {}
-# E_soma_parameters["type"] = rm.Izhikevich_Soma
+# E_soma_parameters["type"] = rm.IzhikevichSoma
 # E_soma_parameters["population_size"] = population_size
 # E_soma_parameters["membrane_time_constant"] = 15 # ms
 # E_soma_parameters["absolute_refractory_period"] = 0 # ms
@@ -64,7 +64,7 @@ Somas
 # #E_soma_parameters["reset_recovery_variable"] = {"distribution":"homogenous", "value":4} # d in model, after spike reset of the recovery variable u
 # E_soma_parameters["reset_recovery_variable"] = {"distribution":"Izhikevich","dependent":"reset_voltage", "base_value":8, "multiplier_value": -6}
 
-E_soma_parameters = {"type": rm.Izhikevich_Soma,
+E_soma_parameters = {"type": rm.somas.IzhikevichSoma,
                      "population_size": population_size,
                      "membrane_time_constant":  15,  # ms
                      "absolute_refractory_period":  0,  # ms
@@ -90,7 +90,7 @@ E_soma_parameters = {"type": rm.Izhikevich_Soma,
 I_soma_parameters = {
     
 }
-I_soma_parameters["type"] = rm.Izhikevich_Soma
+I_soma_parameters["type"] = rm.IzhikevichSoma
 I_soma_parameters["population_size"] = population_size
 I_soma_parameters["membrane_time_constant"] = 30 # ms
 I_soma_parameters["absolute_refractory_period"] = 0 # ms
@@ -111,7 +111,7 @@ I_soma_parameters["reset_recovery_variable"] = {"distribution":"homogenous", "va
 
 
 input_parameters = {}
-input_parameters["type"] = rm.Inputs_Distribute_Single_spike
+input_parameters["type"] = rm.InputsDistributeSingleSpike
 input_parameters["population_size"] = population_size
 input_parameters["percent"] = 0.3
 
@@ -120,7 +120,7 @@ Dynamical synapses
 '''
 # Excitatory to Excitatory (EE)
 EE_dynamical_synapse_parameters = {}
-EE_dynamical_synapse_parameters["type"] = rm.Dynamical_Axonal_Terminal_Markram_etal_1998
+EE_dynamical_synapse_parameters["type"] = rm.DynamicalAxonalTerminalMarkramEtal1998
 EE_dynamical_synapse_parameters["resting_utilization_of_synaptic_efficacy"] = {"distribution":"normal", "mean":0.5, "SD":0.5/2}# U
 EE_dynamical_synapse_parameters["time_constant_depression"] = {"distribution":"normal", "mean":1.1, "SD":1.1/2}# in Maas et al: D, in Markram et al: tau_depression  expressed in seconds
 EE_dynamical_synapse_parameters["time_constant_facilitation"] = {"distribution":"normal", "mean":0.5, "SD":0.5/2}# in Maas et al: F, in Markram et al: tau_facil
@@ -132,7 +132,7 @@ EE_dynamical_synapse_parameters["temporal_upper_limit"] = upper_limit
 
 #Excitatory to Inhibitory (EI)
 EI_dynamical_synapse_parameters = {}
-EI_dynamical_synapse_parameters["type"] = rm.Dynamical_Axonal_Terminal_Markram_etal_1998
+EI_dynamical_synapse_parameters["type"] = rm.DynamicalAxonalTerminalMarkramEtal1998
 EI_dynamical_synapse_parameters["resting_utilization_of_synaptic_efficacy"] = {"distribution":"normal", "mean":0.5, "SD":0.5/2}# U  Strange, the setting from the paper is 0.05, but this results in the inhibitory neurons not firing
 EI_dynamical_synapse_parameters["time_constant_depression"] = {"distribution":"normal", "mean":0.125, "SD":0.125/2} # in Maas et al: D, in Markram et al: tau_depression  expressed in seconds
 EI_dynamical_synapse_parameters["time_constant_facilitation"] = {"distribution":"normal", "mean":1.2, "SD":1.2/2} # in Maas et al: F, in Markram et al: tau_facil
@@ -144,7 +144,7 @@ EI_dynamical_synapse_parameters["temporal_upper_limit"] = upper_limit
 
 # Inhibitory to Excitatory (IE)
 IE_dynamical_synapse_parameters = {}
-IE_dynamical_synapse_parameters["type"] = rm.Dynamical_Axonal_Terminal_Markram_etal_1998
+IE_dynamical_synapse_parameters["type"] = rm.DynamicalAxonalTerminalMarkramEtal1998
 IE_dynamical_synapse_parameters["resting_utilization_of_synaptic_efficacy"] = {"distribution":"normal", "mean":0.25, "SD":0.25/2} # U
 IE_dynamical_synapse_parameters["time_constant_depression"] = {"distribution":"normal", "mean":0.7, "SD":0.7/2} # in Maas et al: D, in Markram et al: tau_depression  expressed in seconds
 IE_dynamical_synapse_parameters["time_constant_facilitation"] = {"distribution":"normal", "mean":0.02, "SD":0.02/2} # in Maas et al: F, in Markram et al: tau_facil
@@ -156,7 +156,7 @@ IE_dynamical_synapse_parameters["temporal_upper_limit"] = upper_limit
 
 # Inhibitory to Inhibitory (II)
 II_dynamical_synapse_parameters = {}
-II_dynamical_synapse_parameters["type"] = rm.Dynamical_Axonal_Terminal_Markram_etal_1998
+II_dynamical_synapse_parameters["type"] = rm.DynamicalAxonalTerminalMarkramEtal1998
 II_dynamical_synapse_parameters["resting_utilization_of_synaptic_efficacy"] = {"distribution":"normal", "mean":0.32, "SD":0.32/2} # U
 II_dynamical_synapse_parameters["time_constant_depression"] = {"distribution":"normal", "mean":0.144, "SD":0.144/2} # in Maas et al: D, in Markram et al: tau_depression  expressed in seconds
 II_dynamical_synapse_parameters["time_constant_facilitation"] = {"distribution":"normal", "mean":0.06, "SD":0.06/2} # in Maas et al: F, in Markram et al: tau_facil
@@ -173,25 +173,25 @@ Delay lines (axons)
 '''
 
 EE_delay_line_parameters = {}
-EE_delay_line_parameters["type"] = rm.Delay_Line
+EE_delay_line_parameters["type"] = rm.DelayLine
 EE_delay_line_parameters["delay"] = 2#1.5 # ms
 EE_delay_line_parameters["time_step"] = time_step #ms
 EE_delay_line_parameters["temporal_upper_limit"] = upper_limit
 
 EI_delay_line_parameters = {}
-EI_delay_line_parameters["type"] = rm.Delay_Line
+EI_delay_line_parameters["type"] = rm.DelayLine
 EI_delay_line_parameters["delay"] = 1#0.8
 EI_delay_line_parameters["time_step"] = time_step
 EI_delay_line_parameters["temporal_upper_limit"] = upper_limit
 
 IE_delay_line_parameters = {}
-IE_delay_line_parameters["type"] = rm.Delay_Line
+IE_delay_line_parameters["type"] = rm.DelayLine
 IE_delay_line_parameters["delay"] = 1#0.8
 IE_delay_line_parameters["time_step"] = time_step
 IE_delay_line_parameters["temporal_upper_limit"] = upper_limit
 
 II_delay_line_parameters = {}
-II_delay_line_parameters["type"] = rm.Delay_Line
+II_delay_line_parameters["type"] = rm.DelayLine
 II_delay_line_parameters["delay"] = 1#0.8
 II_delay_line_parameters["time_step"] = time_step
 II_delay_line_parameters["temporal_upper_limit"] = upper_limit
@@ -200,7 +200,7 @@ II_delay_line_parameters["temporal_upper_limit"] = upper_limit
 arbors
 '''
 EE_dendritic_arbor_parameters = {}
-EE_dendritic_arbor_parameters["type"] = rm.Dendritic_Arbor
+EE_dendritic_arbor_parameters["type"] = rm.DendriticArbor
 projection_template = ncp.ones((7,7))
 projection_template[3,3] = 0
 #projection_template[8,4:] = 1
@@ -214,7 +214,7 @@ EE_dendritic_arbor_parameters["temporal_upper_limit"] = upper_limit
 EE_dendritic_arbor_parameters["boundry_conditions"] = "closed"
 
 EI_dendritic_arbor_parameters = {}
-EI_dendritic_arbor_parameters["type"] = rm.Dendritic_Arbor
+EI_dendritic_arbor_parameters["type"] = rm.DendriticArbor
 EI_dendritic_arbor_parameters["projection_template"] = ncp.ones((7,7))
 EI_dendritic_arbor_parameters["projection_template"][3,3] = 0
 #EI_dendritic_arbor_parameters["projection_template"][1:5,1:5] = 0
@@ -224,7 +224,7 @@ EI_dendritic_arbor_parameters["temporal_upper_limit"] = upper_limit
 EI_dendritic_arbor_parameters["boundry_conditions"] = "closed"
 
 IE_dendritic_arbor_parameters = {}
-IE_dendritic_arbor_parameters["type"] = rm.Dendritic_Arbor
+IE_dendritic_arbor_parameters["type"] = rm.DendriticArbor
 IE_dendritic_arbor_parameters["projection_template"] = ncp.ones((7,7))
 IE_dendritic_arbor_parameters["projection_template"][3,3] = 0
 IE_dendritic_arbor_parameters["time_step"] = time_step
@@ -233,7 +233,7 @@ IE_dendritic_arbor_parameters["temporal_upper_limit"] = upper_limit
 IE_dendritic_arbor_parameters["boundry_conditions"] = "closed"
 
 II_dendritic_arbor_parameters = {}
-II_dendritic_arbor_parameters["type"] = rm.Dendritic_Arbor
+II_dendritic_arbor_parameters["type"] = rm.DendriticArbor
 II_dendritic_arbor_parameters["projection_template"] = ncp.ones((7,7))
 II_dendritic_arbor_parameters["projection_template"][3,3] = 0
 II_dendritic_arbor_parameters["time_step"] = time_step
@@ -246,14 +246,14 @@ Dendritic spines
 '''
 #excitatory dendritic spine
 E_dendritic_Spine_parameters = {}
-E_dendritic_Spine_parameters["type"] = rm.Dendritic_Spine_Maas
+E_dendritic_Spine_parameters["type"] = rm.DendriticSpineMaas
 E_dendritic_Spine_parameters["time_step"] = time_step
 E_dendritic_Spine_parameters["time_constant"] = 3 # ms
 E_dendritic_Spine_parameters["temporal_upper_limit"] = upper_limit
 
 #inhibitory dendritic spine
 I_dendritic_Spine_parameters = {}
-I_dendritic_Spine_parameters["type"] = rm.Dendritic_Spine_Maas
+I_dendritic_Spine_parameters["type"] = rm.DendriticSpineMaas
 I_dendritic_Spine_parameters["time_step"] = time_step
 I_dendritic_Spine_parameters["time_constant"] = 6 # ms
 I_dendritic_Spine_parameters["temporal_upper_limit"] = upper_limit
@@ -261,305 +261,305 @@ I_dendritic_Spine_parameters["temporal_upper_limit"] = upper_limit
 
 '''
 Here we create the dictionaries that contain the parameter dicts for the sequence
-of component a connection consist of. Note that we use the unique_ID_dict_creator object
+of component a connection consist of. Note that we use the UniqueIdDictCreator object
 to create a copy of the generic dict for a component that has a unique ID attached to it.
 This ID is used when the connnection is built later.
 '''
 # use this class to create unique ID's for every parameter dict
-unique_ID_dict_creator = rm.Unique_ID_Dict_Creator(30)
+UniqueIdDictCreator = rm.UniqueIdDictCreator(30)
 
-E_1_soma_parameter_dict = unique_ID_dict_creator.create_unique_ID_dict(E_soma_parameters)
-E_2_soma_parameter_dict = unique_ID_dict_creator.create_unique_ID_dict(E_soma_parameters)
-E_3_soma_parameter_dict = unique_ID_dict_creator.create_unique_ID_dict(E_soma_parameters)
-I_1_soma_parameter_dict = unique_ID_dict_creator.create_unique_ID_dict(I_soma_parameters)
-I_2_soma_parameter_dict = unique_ID_dict_creator.create_unique_ID_dict(I_soma_parameters)
-I_3_soma_parameter_dict = unique_ID_dict_creator.create_unique_ID_dict(I_soma_parameters)
+E_1_soma_parameter_dict = UniqueIdDictCreator.create_unique_ID_dict(E_soma_parameters)
+E_2_soma_parameter_dict = UniqueIdDictCreator.create_unique_ID_dict(E_soma_parameters)
+E_3_soma_parameter_dict = UniqueIdDictCreator.create_unique_ID_dict(E_soma_parameters)
+I_1_soma_parameter_dict = UniqueIdDictCreator.create_unique_ID_dict(I_soma_parameters)
+I_2_soma_parameter_dict = UniqueIdDictCreator.create_unique_ID_dict(I_soma_parameters)
+I_3_soma_parameter_dict = UniqueIdDictCreator.create_unique_ID_dict(I_soma_parameters)
 
-E_1_input_parameters = unique_ID_dict_creator.create_unique_ID_dict(input_parameters)
-E_2_input_parameters = unique_ID_dict_creator.create_unique_ID_dict(input_parameters)
-E_3_input_parameters = unique_ID_dict_creator.create_unique_ID_dict(input_parameters)
-I_1_input_parameters = unique_ID_dict_creator.create_unique_ID_dict(input_parameters)
-I_2_input_parameters = unique_ID_dict_creator.create_unique_ID_dict(input_parameters)
-I_3_input_parameters = unique_ID_dict_creator.create_unique_ID_dict(input_parameters)
+E_1_input_parameters = UniqueIdDictCreator.create_unique_ID_dict(input_parameters)
+E_2_input_parameters = UniqueIdDictCreator.create_unique_ID_dict(input_parameters)
+E_3_input_parameters = UniqueIdDictCreator.create_unique_ID_dict(input_parameters)
+I_1_input_parameters = UniqueIdDictCreator.create_unique_ID_dict(input_parameters)
+I_2_input_parameters = UniqueIdDictCreator.create_unique_ID_dict(input_parameters)
+I_3_input_parameters = UniqueIdDictCreator.create_unique_ID_dict(input_parameters)
 # Setup connection parameter dicts
 # Excitatory self connections
 
 self_E_1_parameter_dict = OrderedDict()
-self_E_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-self_E_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-self_E_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-self_E_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+self_E_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+self_E_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+self_E_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+self_E_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 self_E_2_parameter_dict = OrderedDict()
-self_E_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-self_E_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-self_E_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-self_E_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+self_E_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+self_E_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+self_E_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+self_E_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 self_E_3_parameter_dict = OrderedDict()
-self_E_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-self_E_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-self_E_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-self_E_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+self_E_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+self_E_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+self_E_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+self_E_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 # Inhibitory self connections
 self_I_1_parameter_dict = OrderedDict()
-self_I_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-self_I_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-self_I_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-self_I_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+self_I_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+self_I_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+self_I_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+self_I_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 self_I_2_parameter_dict = OrderedDict()
-self_I_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-self_I_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-self_I_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-self_I_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+self_I_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+self_I_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+self_I_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+self_I_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 self_I_3_parameter_dict = OrderedDict()
-self_I_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-self_I_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-self_I_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-self_I_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+self_I_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+self_I_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+self_I_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+self_I_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 # Excitatory to Excitatory connection from layer x to layer y
-connections = {}
-for from_neuron in range(3):
-    for to_neuron in range(2):
-        to_neuron = from_neuron + to_neuron % 3
-        connection = {"delay_line": unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters),
-                      "arbor": unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters),
-                      "axonal_terminal": unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters),
-                      "dendritic_spines":unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)}
-        connections[from_neuron][to_neuron] = connection
-{1:2:connection1,,
-   3: connection2}
+# connections = {}
+# for from_neuron in range(3):
+#     for to_neuron in range(2):
+#         to_neuron = from_neuron + to_neuron % 3
+#         connection = {"delay_line": UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters),
+#                       "arbor": UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters),
+#                       "axonal_terminal": UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters),
+#                       "dendritic_spines":UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)}
+#         connections[from_neuron][to_neuron] = connection
+# {1:2:connection1,,
+#    3: connection2}
 
     
 EE_1_2_parameter_dict = OrderedDict()
-EE_1_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-EE_1_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-EE_1_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_1_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EE_1_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+EE_1_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+EE_1_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_1_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EE_1_3_parameter_dict = OrderedDict()
-EE_1_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-EE_1_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-EE_1_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_1_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EE_1_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+EE_1_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+EE_1_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_1_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EE_2_1_parameter_dict = OrderedDict()
-EE_2_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-EE_2_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-EE_2_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_2_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EE_2_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+EE_2_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+EE_2_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_2_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EE_2_3_parameter_dict = OrderedDict()
-EE_2_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-EE_2_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-EE_2_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_2_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EE_2_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+EE_2_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+EE_2_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_2_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EE_3_1_parameter_dict = OrderedDict()
-EE_3_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-EE_3_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-EE_3_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_3_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EE_3_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+EE_3_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+EE_3_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_3_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EE_3_2_parameter_dict = OrderedDict()
-EE_3_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
-EE_3_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
-EE_3_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_3_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EE_3_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EE_delay_line_parameters)
+EE_3_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
+EE_3_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_3_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 
 
 
 # Excitatory to Excitatory connection from layer 1 to layer 2
 II_1_2_parameter_dict = OrderedDict()
-II_1_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-II_1_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-II_1_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-II_1_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+II_1_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+II_1_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+II_1_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+II_1_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 # Excitatory to Excitatory connection from layer 1 to layer 3
 II_1_3_parameter_dict = OrderedDict()
-II_1_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-II_1_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-II_1_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-II_1_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+II_1_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+II_1_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+II_1_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+II_1_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 # Excitatory to Excitatory connection from layer 2 to layer 1
 II_2_1_parameter_dict = OrderedDict()
-II_2_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-II_2_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-II_2_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-II_2_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+II_2_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+II_2_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+II_2_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+II_2_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 # Excitatory to Excitatory connection from layer 2 to layer 3
 II_2_3_parameter_dict = OrderedDict()
-II_2_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-II_2_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-II_2_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-II_2_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+II_2_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+II_2_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+II_2_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+II_2_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 # Excitatory to Excitatory connection from layer 3 to layer x
 II_3_1_parameter_dict = OrderedDict()
-II_3_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-II_3_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-II_3_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-II_3_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+II_3_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+II_3_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+II_3_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+II_3_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 II_3_2_parameter_dict = OrderedDict()
-II_3_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(II_delay_line_parameters)
-II_3_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dendritic_arbor_parameters)
-II_3_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(II_dynamical_synapse_parameters)
-II_3_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+II_3_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(II_delay_line_parameters)
+II_3_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dendritic_arbor_parameters)
+II_3_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(II_dynamical_synapse_parameters)
+II_3_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 
 # Excitatory to Inhibitory connections
 EI_1_1_parameter_dict = OrderedDict()
-EI_1_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_1_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_1_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_1_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_1_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_1_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_1_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_1_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_1_2_parameter_dict = OrderedDict()
-EI_1_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_1_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_1_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_1_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_1_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_1_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_1_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_1_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_1_3_parameter_dict = OrderedDict()
-EI_1_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_1_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_1_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_1_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_1_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_1_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_1_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_1_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 ##############
 EI_2_1_parameter_dict = OrderedDict()
-EI_2_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_2_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_2_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_2_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_2_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_2_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_2_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_2_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_2_2_parameter_dict = OrderedDict()
-EI_2_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_2_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_2_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_2_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_2_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_2_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_2_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_2_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_2_3_parameter_dict = OrderedDict()
-EI_2_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_2_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_2_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_2_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_2_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_2_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_2_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_2_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 #############
 EI_3_1_parameter_dict = OrderedDict()
-EI_3_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_3_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_3_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_3_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_3_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_3_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_3_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_3_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_3_2_parameter_dict = OrderedDict()
-EI_3_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_3_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_3_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_3_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_3_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_3_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_3_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_3_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_3_3_parameter_dict = OrderedDict()
-EI_3_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EI_delay_line_parameters)
-EI_3_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
-EI_3_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
-EI_3_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+EI_3_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(EI_delay_line_parameters)
+EI_3_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dendritic_arbor_parameters)
+EI_3_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(EI_dynamical_synapse_parameters)
+EI_3_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 # Inhibitory to Excitatory connections
 IE_1_1_parameter_dict = OrderedDict()
-IE_1_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_1_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_1_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_1_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_1_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_1_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_1_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_1_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 IE_1_2_parameter_dict = OrderedDict()
-IE_1_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_1_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_1_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_1_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_1_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_1_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_1_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_1_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 IE_1_3_parameter_dict = OrderedDict()
-IE_1_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_1_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_1_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_1_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_1_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_1_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_1_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_1_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 ############
 IE_2_1_parameter_dict = OrderedDict()
-IE_2_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_2_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_2_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_2_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_2_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_2_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_2_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_2_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 IE_2_2_parameter_dict = OrderedDict()
-IE_2_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_2_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_2_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_2_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_2_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_2_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_2_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_2_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 IE_2_3_parameter_dict = OrderedDict()
-IE_2_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_2_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_2_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_2_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_2_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_2_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_2_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_2_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 ##########
 IE_3_1_parameter_dict = OrderedDict()
-IE_3_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_3_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_3_1_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_3_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_3_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_3_1_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_3_1_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_3_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 IE_3_2_parameter_dict = OrderedDict()
-IE_3_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_3_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_3_2_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_3_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_3_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_3_2_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_3_2_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_3_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 IE_3_3_parameter_dict = OrderedDict()
-IE_3_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-IE_3_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
-IE_3_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
-IE_3_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
+IE_3_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+IE_3_3_parameter_dict["arbor"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dendritic_arbor_parameters)
+IE_3_3_parameter_dict["axonal_terminal"] =  UniqueIdDictCreator.create_unique_ID_dict(IE_dynamical_synapse_parameters)
+IE_3_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 # Input dicts
 EE_input_1_parameter_dict = OrderedDict()
-#EE_input_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-EE_input_1_parameter_dict["axonal_terminal"] = unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_input_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+#EE_input_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+EE_input_1_parameter_dict["axonal_terminal"] = UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_input_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EE_input_2_parameter_dict = OrderedDict()
-#EE_input_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-EE_input_2_parameter_dict["axonal_terminal"] = unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_input_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+#EE_input_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+EE_input_2_parameter_dict["axonal_terminal"] = UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_input_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EE_input_3_parameter_dict = OrderedDict()
-#EE_input_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-EE_input_3_parameter_dict["axonal_terminal"] = unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EE_input_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+#EE_input_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+EE_input_3_parameter_dict["axonal_terminal"] = UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EE_input_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_input_1_parameter_dict = OrderedDict()
-#EI_input_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-EI_input_1_parameter_dict["axonal_terminal"] = unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EI_input_1_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+#EI_input_1_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+EI_input_1_parameter_dict["axonal_terminal"] = UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EI_input_1_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_input_2_parameter_dict = OrderedDict()
-#EI_input_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-EI_input_2_parameter_dict["axonal_terminal"] = unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EI_input_2_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+#EI_input_2_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+EI_input_2_parameter_dict["axonal_terminal"] = UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EI_input_2_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 EI_input_3_parameter_dict = OrderedDict()
-#EI_input_3_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(IE_delay_line_parameters)
-EI_input_3_parameter_dict["axonal_terminal"] = unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
-EI_input_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
+#EI_input_3_parameter_dict["delay_line"] = UniqueIdDictCreator.create_unique_ID_dict(IE_delay_line_parameters)
+EI_input_3_parameter_dict["axonal_terminal"] = UniqueIdDictCreator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
+EI_input_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
 
 if __name__ == '__main__':
@@ -580,39 +580,39 @@ if __name__ == '__main__':
         # Here we first create neuron object. Initioally these only contain the soma of the neurons
         # as they are not connected to anything and thus don't have dendrites or axons
         print("initializing neurons")
-        E1_neurons = rm.Neurons_fully_distributed(client)
-        E2_neurons = rm.Neurons_fully_distributed(client)
-        E3_neurons = rm.Neurons_fully_distributed(client)
+        E1_neurons = rm.NeuronsFullyDistributed(client)
+        E2_neurons = rm.NeuronsFullyDistributed(client)
+        E3_neurons = rm.NeuronsFullyDistributed(client)
 
-        I1_neurons = rm.Neurons_fully_distributed(client)
-        I2_neurons = rm.Neurons_fully_distributed(client)
-        I3_neurons = rm.Neurons_fully_distributed(client)
+        I1_neurons = rm.NeuronsFullyDistributed(client)
+        I2_neurons = rm.NeuronsFullyDistributed(client)
+        I3_neurons = rm.NeuronsFullyDistributed(client)
 
         print("Constructing neurons")
-        E1_neurons.construct_neuron(rm.Izhikevich_Soma, E_1_soma_parameter_dict, 0, "E1_soma", client)
-        E2_neurons.construct_neuron(rm.Izhikevich_Soma, E_2_soma_parameter_dict, 1, "E2_soma", client)
-        E3_neurons.construct_neuron(rm.Izhikevich_Soma, E_3_soma_parameter_dict, 2, "E3_soma", client)
+        E1_neurons.construct_neuron(rm.IzhikevichSoma, E_1_soma_parameter_dict, 0, "E1_soma", client)
+        E2_neurons.construct_neuron(rm.IzhikevichSoma, E_2_soma_parameter_dict, 1, "E2_soma", client)
+        E3_neurons.construct_neuron(rm.IzhikevichSoma, E_3_soma_parameter_dict, 2, "E3_soma", client)
 
-        I1_neurons.construct_neuron(rm.Izhikevich_Soma, I_1_soma_parameter_dict, 0, "I1_soma", client)
-        I2_neurons.construct_neuron(rm.Izhikevich_Soma, I_2_soma_parameter_dict, 1, "I2_soma", client)
-        I3_neurons.construct_neuron(rm.Izhikevich_Soma, I_3_soma_parameter_dict, 2, "I3_soma", client)
+        I1_neurons.construct_neuron(rm.IzhikevichSoma, I_1_soma_parameter_dict, 0, "I1_soma", client)
+        I2_neurons.construct_neuron(rm.IzhikevichSoma, I_2_soma_parameter_dict, 1, "I2_soma", client)
+        I3_neurons.construct_neuron(rm.IzhikevichSoma, I_3_soma_parameter_dict, 2, "I3_soma", client)
 
         print("Constructing inputs")
-        E1_input = rm.Input_Neurons( client)
-        E2_input = rm.Input_Neurons( client)
-        E3_input = rm.Input_Neurons( client)
+        E1_input = rm.InputNeurons( client)
+        E2_input = rm.InputNeurons( client)
+        E3_input = rm.InputNeurons( client)
 
-        I1_input = rm.Input_Neurons( client)
-        I2_input = rm.Input_Neurons( client)
-        I3_input = rm.Input_Neurons( client)
+        I1_input = rm.InputNeurons( client)
+        I2_input = rm.InputNeurons( client)
+        I3_input = rm.InputNeurons( client)
 
-        E1_input.construct_neuron(rm.Inputs_Distribute_Single_spike, E_1_input_parameters, 0, "E1_input", client)
-        E2_input.construct_neuron(rm.Inputs_Distribute_Single_spike, E_2_input_parameters, 1, "E2_input", client)
-        E3_input.construct_neuron(rm.Inputs_Distribute_Single_spike, E_3_input_parameters, 2, "E3_input", client)
+        E1_input.construct_neuron(rm.InputsDistributeSingleSpike, E_1_input_parameters, 0, "E1_input", client)
+        E2_input.construct_neuron(rm.InputsDistributeSingleSpike, E_2_input_parameters, 1, "E2_input", client)
+        E3_input.construct_neuron(rm.InputsDistributeSingleSpike, E_3_input_parameters, 2, "E3_input", client)
 
-        I1_input.construct_neuron(rm.Inputs_Distribute_Single_spike, I_1_input_parameters, 0, "I1_input", client)
-        I2_input.construct_neuron(rm.Inputs_Distribute_Single_spike, I_2_input_parameters, 1, "I2_input", client)
-        I3_input.construct_neuron(rm.Inputs_Distribute_Single_spike, I_3_input_parameters, 2, "I3_input", client)
+        I1_input.construct_neuron(rm.InputsDistributeSingleSpike, I_1_input_parameters, 0, "I1_input", client)
+        I2_input.construct_neuron(rm.InputsDistributeSingleSpike, I_2_input_parameters, 1, "I2_input", client)
+        I3_input.construct_neuron(rm.InputsDistributeSingleSpike, I_3_input_parameters, 2, "I3_input", client)
 
         # The interface futures funciton is used to connect two neurons and build all the
         # components the connection consists of based on the paramter dict which contains

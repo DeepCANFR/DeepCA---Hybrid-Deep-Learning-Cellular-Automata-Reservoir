@@ -1,5 +1,5 @@
 import dask
-
+from .arborizers import DendriticArbor
 
 '''
 Neurons
@@ -178,7 +178,7 @@ class NeuronsFullyDistributed(object):
                     # The first and last components will always be somas so we don't need to check
                     # components type for these
                     component_type = self.components[ID].parameters["type"]
-                    if component_type == Dendritic_Arbor:
+                    if component_type == DendriticArbor:
                         future = component.set_boundry_conditions()
                         future.result()
                         future = component.kill_connections_based_on_distance(
