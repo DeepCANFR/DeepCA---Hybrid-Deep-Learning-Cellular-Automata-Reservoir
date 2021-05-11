@@ -5,7 +5,7 @@ Support classes
 '''
 
 
-class Interfacable_Array(object):
+class InterfacableArray(object):
     def __init__(self, population_shape):
         self.array = ncp.zeros(population_shape)
         self.array = self.array[:, :, ncp.newaxis]

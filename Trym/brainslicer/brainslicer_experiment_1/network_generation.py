@@ -38,7 +38,7 @@ weight_scaling = 1
 
 time_step = 1
 population_size = (10,100) #image_train[0,:,:].shape
-upper_limit = 10000
+upper_limit = 10000 # To do: make this explicit for each experiment instead of defined in the module
 
 '''
 Somas
@@ -322,7 +322,19 @@ self_I_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_uniq
 self_I_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(I_dendritic_Spine_parameters)
 
 # Excitatory to Excitatory connection from layer x to layer y
+connections = {}
+for from_neuron in range(3):
+    for to_neuron in range(2):
+        to_neuron = from_neuron + to_neuron % 3
+        connection = {"delay_line": unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters),
+                      "arbor": unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters),
+                      "axonal_terminal": unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters),
+                      "dendritic_spines":unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)}
+        connections[from_neuron][to_neuron] = connection
+{1:2:connection1,,
+   3: connection2}
 
+    
 EE_1_2_parameter_dict = OrderedDict()
 EE_1_2_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
 EE_1_2_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)
@@ -347,7 +359,6 @@ EE_2_3_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(E
 EE_2_3_parameter_dict["axonal_terminal"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dynamical_synapse_parameters)
 EE_2_3_parameter_dict["dendritic_spines"] =  unique_ID_dict_creator.create_unique_ID_dict(E_dendritic_Spine_parameters)
 
-# Excitatory to Excitatory connection from layer 3 to layer x
 EE_3_1_parameter_dict = OrderedDict()
 EE_3_1_parameter_dict["delay_line"] = unique_ID_dict_creator.create_unique_ID_dict(EE_delay_line_parameters)
 EE_3_1_parameter_dict["arbor"] =  unique_ID_dict_creator.create_unique_ID_dict(EE_dendritic_arbor_parameters)

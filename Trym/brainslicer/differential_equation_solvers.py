@@ -3,7 +3,7 @@ Differential equiation solvers
 '''
 
 
-class RungeKutta2_cupy(object):
+class RungeKutta2(object):
     def __init__(self, f, time_step):
         # Initialize the class with the size of the time steps you are using
 
@@ -22,7 +22,7 @@ class RungeKutta2_cupy(object):
         return u_delta
 
 
-class ForwardEuler_cupy(object):
+class ForwardEuler(object):
     def __init__(self, f, time_step):
         self.f = f
         self.time_step = time_step  # size of time step
