@@ -36,7 +36,7 @@ from .arborizers import DendriticArbor
 
 from .delay_lines import DelayLine
 
-from .neurons import NeuronsFullyDistributed, InputNeurons
+from .neurons import NeuronsFullyDistributed, InputNeurons, NeuronsLocal, InputNeuronsLocal
 
 from .inputs import InputsDistributeSingleSpike
 
