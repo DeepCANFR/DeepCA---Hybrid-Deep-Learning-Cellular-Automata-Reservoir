@@ -28,7 +28,7 @@ class NeuralStructure(object):
 
         self.state["connected_components"] = []
 
-        time.sleep(0.5)
+        #time.sleep(0.5)
 
 
     def reconstruct_interface(self, external_component):

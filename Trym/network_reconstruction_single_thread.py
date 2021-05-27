@@ -181,7 +181,7 @@ if __name__ == '__main__':
 
     spike_trains_base = ncp.load("spike_trains_base.npy")
     spike_trains_jittered = ncp.load("spike_trains_jittered.npy")
-    simulation_length = 200
+    simulation_length = 2000
     distances = [0, 0.01, 0.02, 0.04]
    
     stop_simulation = False
@@ -202,10 +202,10 @@ if __name__ == '__main__':
 
     with Client(n_workers = 6) as client:
         futures = []
-        for distance_nr in range(4):
+        for distance_nr in range(len(distances)):
             print("distance_nr: ", distance_nr)
             print("train_nr: ")
-            for train_nr in range(10):
+            for train_nr in range(spike_trains_base.shape[0]):
                 print(train_nr)
 
                 #simulation_length = len(stimulation_train)
