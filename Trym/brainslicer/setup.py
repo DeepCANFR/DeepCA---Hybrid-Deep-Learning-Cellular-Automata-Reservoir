@@ -22,4 +22,5 @@ setuptools.setup(
     package_dir={"": "../brainslicer"},
     packages=setuptools.find_packages(where="../brainslicer"),
     python_requires=">=3.6",
+    install_requires=['dask', 'numpy'],
 )
