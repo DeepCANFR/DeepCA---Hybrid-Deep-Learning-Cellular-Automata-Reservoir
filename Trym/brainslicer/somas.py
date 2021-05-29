@@ -20,8 +20,8 @@ class BaseIntegrateAndFireSoma(NeuralStructure):
     new_somatic_voltages = 0
     current_u = 0
     summed_inputs = 0
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         if len(self.population_size) != 2:
             print(
                 "Population size must be size 2 and give population size in x and y dimensions")
@@ -108,8 +108,8 @@ class BaseIntegrateAndFireSoma(NeuralStructure):
         return(2)
 
 class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         population_size = self.population_size
 
         if self.reset_voltage["distribution"] == "homogenous":
@@ -287,8 +287,8 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         # return 1
 
 class IzhikevichSoma(BaseIntegrateAndFireSoma):
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         population_size = self.population_size
         self.state["current_u"] = ncp.zeros(population_size)
         self.state["new_u"] = ncp.zeros(population_size)
