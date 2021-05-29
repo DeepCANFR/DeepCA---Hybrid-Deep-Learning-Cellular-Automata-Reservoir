@@ -4,27 +4,28 @@ import numpy as ncp
 Readouts
 '''
 
+class SquashingFunctionRho():
+    pass
 
 class ReadoutPDelta(object):
-    def __init__(self, parameter_dict):
-        self.parameters = parameter_dict
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
-        self.nr_of_readout_neurons = self.parameters["nr_of_readout_neurons"]
+        self.nr_of_readout_neurons = self.nr_of_readout_neurons
         self.parallel_perceptron_outputs = ncp.zeros(
             self.nr_of_readout_neurons)
 
-        self.squashing_function = Squashing_Function_rho(
-            self.parameters["rho"])
-        self.margin = self.parameters["margin"]
+        self.squashing_function = SquashingFunctionRho(self.rho)
+        self.margin = self.margin
         # gamma in paper
 
-        self.clear_margin_importance = self.parameters["clear_margins_importance"]
+        self.clear_margin_importance = self.clear_margins_importance
         # mu in paper
 
-        self.error_tolerance = self.parameters["error_tolerance"]
+        self.error_tolerance = self.error_tolerance
         # small epsilon in paper
 
-        self.learning_rate = self.parameters["learning_rate"]
+        self.learning_rate = self.learning_rate
         # eta in paper
 
     def activation_function(self):
@@ -39,7 +40,7 @@ class ReadoutPDelta(object):
 
         # testing fic
         input_projection = ncp.repeat(
-            self.inputs[:, :, cp.newaxis], self.nr_of_readout_neurons, axis=2)
+            self.inputs[:, :, ncp.newaxis], self.nr_of_readout_neurons, axis=2)
         parallel_perceptron_outputs = ncp.sum(
             input_projection*self.weights, axis=(0, 1))
         #self.parallel_perceptron_outputs *= 0.3

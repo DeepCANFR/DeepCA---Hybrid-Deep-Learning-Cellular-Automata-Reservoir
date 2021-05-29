@@ -15,14 +15,12 @@ class DelayLine(NeuralStructure):
     interfacable = 0
 
 
-    def __init__(self, parameter_dict):
-
-        super().__init__(parameter_dict)
-
-
-        self.state["delay_in_compute_steps"] = int(
-
-            self.parameters["delay"] / self.parameters["time_step"])
+    def __init__(self, **kwargs):
+        required_parameters = {'time_step', 'delay'}
+        for required_parameter in required_parameters:
+            assert required_parameter in kwargs.keys(), f"{required_parameter} is required in a {type(self)}"
+        super().__init__(**kwargs)
+        self.state["delay_in_compute_steps"] = int(self.delay / self.time_step)
 
 
     def interface(self, external_component):

@@ -1,7 +1,7 @@
 
 import pickle
 
-from ..Trym import brainslicer as rm
+import ..brainslicer as rm
 import matplotlib.pyplot as plt
 #import tensorflow as tf
 from scipy import stats

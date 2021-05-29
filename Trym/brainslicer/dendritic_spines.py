@@ -9,15 +9,14 @@ from .neural_structure import NeuralStructure
 class DendriticSpineMaas(NeuralStructure):
     interfacable = 0
 
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
-        self.dt = self.parameters["time_step"]
-        self.time_constant = self.parameters["time_constant"]
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.dt = self.time_step
 
     def interface(self, external_component):
         self.external_component = external_component
         self.state["connected_components"].append(
-            external_component.parameters["ID"])
+            external_component.ID)
 
         external_component_read_variable = self.external_component.interfacable
         external_component_read_variable_shape = external_component_read_variable.shape
@@ -44,12 +43,12 @@ class DendriticSpineMaas(NeuralStructure):
 
     def compute_new_values(self):
         indexes = self.state["indexes"]
-        time_step = self.parameters["time_step"]
+        time_step = self.time_step
         time_since_last_spike = self.state["time_since_last_spike"]
         new_synaptic_output = self.state["new_synaptic_output"]
         current_synaptic_input = self.state["current_synaptic_input"]
         last_input_since_spike = self.state["last_input_since_spike"]
-        time_constant = self.parameters["time_constant"]
+        time_constant = self.time_constant
 
         # compute new time since last spiked first to decay current value
         time_since_last_spike += time_step

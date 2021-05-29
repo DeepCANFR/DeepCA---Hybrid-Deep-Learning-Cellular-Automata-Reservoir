@@ -1,6 +1,7 @@
 
-from brainslicer.neural_structure import NeuralStructure
+from .neural_structure import NeuralStructure
 import numpy as ncp
+import sys
 from .help_functions import remove_neg_values
 '''
     Axonal arbors
@@ -8,14 +9,13 @@ from .help_functions import remove_neg_values
 
 
 class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
-    interfacable = 0
 
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
-
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.interfacable = 0
         self.spike_matrix = None
         self.state["spike_matrix"] = None
-        self.delta_t = self.parameters["time_step"]
+        self.delta_t = self.time_step # ???
 
         self.state["connected_components"] = []
 
@@ -23,8 +23,7 @@ class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
         # read variable should be a 2d or 3d array containing boolean values of spikes
         self.external_component = external_component
         # print(external_component.parameters.keys())
-        self.state["connected_components"].append(
-            external_component.parameters["ID"])
+        self.state["connected_components"].append(external_component.ID)
 
         external_component_read_variable = self.external_component.interfacable
         external_component_read_variable_shape = external_component_read_variable.shape
@@ -43,24 +42,23 @@ class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
         self.state["time_since_last_spike"] = ncp.zeros(
             self.state["population_size"])
 
-        resting_utilization_of_synaptic_efficacy_distribution = self.parameters[
-            "resting_utilization_of_synaptic_efficacy"]["distribution"]
+        resting_utilization_of_synaptic_efficacy_distribution = self.resting_utilization_of_synaptic_efficacy["distribution"]
 
         if resting_utilization_of_synaptic_efficacy_distribution == "normal":
 
-            mean = self.parameters["resting_utilization_of_synaptic_efficacy"]["mean"]
-            SD = self.parameters["resting_utilization_of_synaptic_efficacy"]["SD"]
+            mean = self.resting_utilization_of_synaptic_efficacy["mean"]
+            standard_deviation = self.resting_utilization_of_synaptic_efficacy["SD"]
             population_size = self.state["population_size"]
 
             self.state["resting_utilization_of_synaptic_efficacy"] = ncp.random.normal(
-                mean, SD, population_size)
+                mean, standard_deviation, population_size)
 
             resting_utilization_of_synaptic_efficacy = self.state[
                 "resting_utilization_of_synaptic_efficacy"]
 
             negative_values = resting_utilization_of_synaptic_efficacy <= 0
             replacement_values = ncp.random.uniform(
-                mean - SD, mean + SD, population_size)
+                mean - standard_deviation, mean + standard_deviation, population_size)
             resting_utilization_of_synaptic_efficacy *= negative_values == 0
             resting_utilization_of_synaptic_efficacy += replacement_values*negative_values
 
@@ -69,19 +67,18 @@ class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
                 "only normal distribution implemented for resting_utilization_of_synaptic_efficacy_distribution")
             sys.exit(0)
 
-        absolute_synaptic_efficacy_distribution = self.parameters[
-            "absolute_synaptic_efficacy"]["distribution"]
+        absolute_synaptic_efficacy_distribution = self.absolute_synaptic_efficacy["distribution"]
 
         if resting_utilization_of_synaptic_efficacy_distribution == "normal":
 
-            mean = self.parameters["absolute_synaptic_efficacy"]["mean"]
-            SD = self.parameters["absolute_synaptic_efficacy"]["SD"]
+            mean = self.absolute_synaptic_efficacy["mean"]
+            SD = self.absolute_synaptic_efficacy["SD"]
             population_size = self.state["population_size"]
 
             self.state["weight_matrix"] = ncp.random.normal(
                 mean, SD, population_size)
 
-            synapse_type = self.parameters["synapse_type"]
+            synapse_type = self.synapse_type
             weight_matrix = self.state["weight_matrix"]
 
 
@@ -104,43 +101,42 @@ class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
                 "Absolute synaptic efficacy distributions other than normal has not been implemented")
             sys.exit(0)
 
-        time_constant_depression_distribution = self.parameters[
-            "time_constant_depression"]["distribution"]
+        time_constant_depression_distribution = self.time_constant_depression["distribution"]
 
         if time_constant_depression_distribution == "normal":
 
-            mean = self.parameters["time_constant_depression"]["mean"]
-            SD = self.parameters["time_constant_depression"]["SD"]
+            mean = self.time_constant_depression["mean"]
+            standard_deviation = self.time_constant_depression["SD"]
             population_size = self.state["population_size"]
 
             self.state["tau_recovery"] = ncp.random.normal(
-                mean, SD, population_size)
+                mean, standard_deviation, population_size)
 
             tau_recovery = self.state["tau_recovery"]
 
             negative_values = tau_recovery <= 0
             replacement_values = ncp.random.uniform(
-                mean - SD, mean + SD, population_size)
+                mean - standard_deviation, mean + standard_deviation, population_size)
             tau_recovery *= negative_values == 0
             tau_recovery += replacement_values*negative_values
 
         else:
             print("Only normal distribution implemented for time_constant_depression")
 
-        if self.parameters["time_constant_facilitation"]["distribution"] == "normal":
+        if self.time_constant_facilitation["distribution"] == "normal":
 
-            mean = self.parameters["time_constant_facilitation"]["mean"]
-            SD = self.parameters["time_constant_facilitation"]["SD"]
+            mean = self.time_constant_facilitation["mean"]
+            standard_deviation = self.time_constant_facilitation["SD"]
             population_size = self.state["population_size"]
 
             self.state["tau_facil"] = ncp.random.normal(
-                mean, SD, population_size)
+                mean, standard_deviation, population_size)
 
             tau_facil = self.state["tau_facil"]
 
             negative_values = tau_facil <= 0
             replacement_values = ncp.random.uniform(
-                mean - SD, mean + SD, population_size)
+                mean - standard_deviation, mean + standard_deviation, population_size)
             tau_facil *= negative_values == 0
             tau_facil += replacement_values*negative_values
 
@@ -205,7 +201,7 @@ class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
         new_neurotransmitter_reserve[indexes] = current_neurotransmitter_reserve * (
             1 - new_utilization_of_synaptic_efficacy)*ncp.exp(-time_since_last_spike / tau_recovery) + 1 - ncp.exp(-time_since_last_spike / tau_recovery)
 
-        time_step = self.parameters["time_step"]
+        time_step = self.time_step
         spike_matrix = self.state["spike_matrix"]
         new_synaptic_response = self.state["new_synaptic_response"]
         weight_matrix = self.state["weight_matrix"]
@@ -227,6 +223,9 @@ class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
         # return 1
 
     def update_current_values(self):
+        '''
+            TODO: does this have syntax errors?
+        '''
         indexes = self.state["indexes"]
         current_synaptic_response = self.state["current_synaptic_response"]
         new_synaptic_response = self.state["new_synaptic_response"]
@@ -244,5 +243,5 @@ class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
         current_neurotransmitter_reserve[indexes] = new_neurotransmitter_reserve
 
         spike_matrix[indexes] = self.external_component.interfacable
-        "update"
+        "update" # ???
         # return 2

@@ -14,13 +14,15 @@ class NeuronsFullyDistributed(object):
     def __init__(self, client):
         self.client = client
 
-    def construct_neuron(self, soma_type, soma_parameter_dict, position, ID, client):
-
+    def construct_neuron(self, soma_type, soma, position, ID, client):
+        '''
+            TODO: CHECK THAT THIS REWRITING WORKS
+        '''
         self.components = {}
         self.ID = ID
-        self.soma_ID = soma_parameter_dict["ID"]
+        self.soma_ID = soma.ID
         self.components[self.soma_ID] = self.client.submit(
-            soma_type, soma_parameter_dict, actors=True)
+            soma_type, soma, actors=True)
         self.connections = []
 
         self.connected_neurons = {}
@@ -50,16 +52,16 @@ class NeuronsFullyDistributed(object):
     def set_soma(self, soma_data):
         # Use this to change the soma of the neurons for testing the effect of different somatic compartments on
         # the same network
-        original_ID = self.components[self.soma_ID].parameters["ID"]
+        original_ID = self.components[self.soma_ID].ID
         original_connected_components = self.components[self.soma_ID].state["connected_components"]
 
-        soma_data[1]["parameters"]["ID"] = original_ID
+        soma_data[1].ID = original_ID
         soma_data[1]["state"]["connected_components"] = original_connected_components
 
-        soma_type = soma_data[1]["parameters"]["type"]
-        soma_parameter_dict = soma_data[1]["parameters"]
+        soma_type = soma_data[1].type
+        soma_attributes = soma_data[1].__dict__
         self.components[self.soma_ID] = self.client.submit(
-            soma_type, soma_parameter_dict, actors=True)
+            soma_type, soma_attributes, actors=True)
         self.components[self.soma_ID] = self.components[self.soma_ID].result()
         self.soma = self.components[self.soma_ID]
 
@@ -84,8 +86,9 @@ class NeuronsFullyDistributed(object):
 
     def interface_futures(self, connection_parameters, neuron):
         '''
-        Create the components used in connections between neurons
-        The parameter_dict needs to be a OrderedDict containing the parameter_dicts of each component
+            Create the components used in connections between neurons
+            TODO: NEEDS REWRITING AFTER PARAMETER DICT
+        
         '''
 
         self.connected_neurons[neuron.ID] = neuron
@@ -230,18 +233,18 @@ class InputNeurons(NeuronsFullyDistributed):
     def __init__(self, client):
         self.client = client
 
-    def construct_neuron(self, Input_Class, input_parameter_dict, position, ID, client):
+    def construct_neuron(self, Input_Class, input_attributes, ID, position=0):
 
         self.components = {}
         self.ID = ID
-        self.soma_ID = input_parameter_dict["ID"]
+        self.soma_ID = input_attributes.ID
         self.components[self.soma_ID] = self.client.submit(
-            Input_Class, input_parameter_dict, actors=True)
+            Input_Class, input_attributes, actors=True)
 
         self.connections = []
 
         self.connected_neurons = {}
-        self.position = 0
+        self.position = position
 
     def compute_new_values(self, inputs):
         self.futures = []
@@ -264,12 +267,12 @@ class NeuronsLocal(object):
     def __init__(self):
        pass
 
-    def construct_neuron(self, soma_type, soma_parameter_dict, position, ID):
+    def construct_neuron(self, soma_class, soma_attributes, position, ID):
 
         self.components = {}
         self.ID = ID
-        self.soma_ID = soma_parameter_dict["ID"]
-        self.components[self.soma_ID] = soma_type(soma_parameter_dict)
+        self.soma_ID = soma_attributes.ID
+        self.components[self.soma_ID] = soma_class(soma_attributes)
         self.connections = []
 
         self.connected_neurons = {}
@@ -277,33 +280,34 @@ class NeuronsLocal(object):
 
     def reconstruct_neuron(self, neuron_data):
 
-        self.ID = neuron_data["ID"]
-        self.soma_ID = neuron_data["soma_ID"]
-        self.position = neuron_data["position"]
-        self.connections = neuron_data["connections"]
+        self.ID = neuron_data.ID
+        self.soma_ID = neuron_data.soma_ID
+        self.position = neuron_data.position
+        self.connections = neuron_data.connections
         self.components = {}
-        component_data = neuron_data["component_data"]
-        for component_ID in component_data:
+        component_identifiers = neuron_data.component_data
+        for component_identifier in component_identifiers:
+            component = component_identifiers[component_identifier]
+            component_identifier = component.ID
+            component_type = component.type
 
-            component_parameters = component_data[component_ID]["parameters"]
-            component_ID = component_parameters["ID"]
-            component_type = component_parameters["type"]
-
-            self.components[component_ID] = component_type(component_parameters)
+            self.components[component_identifier] = component_type(**component.__dict__)
 
 
     def set_soma(self, soma_data):
-        # Use this to change the soma of the neurons for testing the effect of different somatic compartments on
-        # the same network
-        original_ID = self.components[self.soma_ID].parameters["ID"]
+        '''
+            Use this to change the soma of the neurons for testing the effect of different somatic compartments on
+            the same network
+        '''
+        original_identifier = self.components[self.soma_ID].ID
         original_connected_components = self.components[self.soma_ID].state["connected_components"]
 
-        soma_data[1]["parameters"]["ID"] = original_ID
+        soma_data[1].ID = original_identifier
         soma_data[1]["state"]["connected_components"] = original_connected_components
 
-        soma_type = soma_data[1]["parameters"]["type"]
-        soma_parameter_dict = soma_data[1]["parameters"]
-        self.components[self.soma_ID] = soma_type(soma_parameter_dict)
+        soma_type = soma_data[1].type
+        soma_attributes = soma_data[1].__dict__
+        self.components[self.soma_ID] = soma_type(**soma_attributes)
         
         self.soma = self.components[self.soma_ID]
 
@@ -324,22 +328,23 @@ class NeuronsLocal(object):
             self.components[component_ID].set_state(component_state)
             
 
-    def interface_futures(self, connection_parameters, neuron):
+    def interface_futures(self, connection_attributes: dict, neuron):
         '''
         Create the components used in connections between neurons
-        The parameter_dict needs to be a OrderedDict containing the parameter_dicts of each component
+        The connection_attributes parameter must be a dict from connection identifier to connection
+        
         '''
 
         self.connected_neurons[neuron.ID] = neuron
-        #self.connection_parameters[neuron.ID] = connection_parameters
+        #self.connection_attributes[neuron.ID] = connection_attributes
         connection = []
         connection.append(self.soma_ID)
-        for key in connection_parameters:
-            component_parameters = connection_parameters[key]
-            component_ID = component_parameters["ID"]
-            component_type = component_parameters["type"]
-            self.components[component_ID] = component_type(component_parameters)
-            connection.append(component_ID)
+        for key in connection_attributes:
+            component_parameters = connection_attributes[key]
+            component_identifier = component_parameters.ID
+            component_type = component_parameters.type
+            self.components[component_identifier] = component_type(component_parameters)
+            connection.append(component_identifier)
         connection.append(neuron.ID)
         self.connections.append(connection)
 
@@ -467,12 +472,12 @@ class InputNeuronsLocal(NeuronsLocal):
     def __init__(self):
         pass
 
-    def construct_neuron(self, Input_Class, input_parameter_dict, position, ID):
+    def construct_neuron(self, input_class, input_attributes, position, ID):
 
         self.components = {}
         self.ID = ID
-        self.soma_ID = input_parameter_dict["ID"]
-        self.components[self.soma_ID] = Input_Class(input_parameter_dict)
+        self.soma_ID = input_attributes.ID
+        self.components[self.soma_ID] = input_class(input_attributes)
 
         self.connections = []
 

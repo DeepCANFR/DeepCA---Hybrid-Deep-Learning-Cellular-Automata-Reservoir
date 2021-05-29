@@ -1,5 +1,6 @@
 
 import numpy as ncp
+import sys
 from .neural_structure import NeuralStructure
 #import neural_structure
 '''
@@ -8,23 +9,34 @@ from .neural_structure import NeuralStructure
 class DendriticArbor(NeuralStructure):
     interfacable = 0
     kill_mask = 0
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
-        #self.projection_template = self.parameters["projection_template"]
+    def __init__(self, projection_template: ncp.ndarray, distance_based_connection_probability: dict, **kwargs):
+        '''
+            In order to be a dendritic arbor the following attributes must be defined.
+            Required parameters:
+                projection_template - numpy-like array
+                distance_based_connection_probability - dict containing C and lambda parameter
+
+        '''
+        super().__init__(**kwargs)
+        self.projection_template = projection_template
+        self.__dict__.update(**kwargs)
+        #self.projection_template = self.projection_template
         self.state["connected_components"] = []
+    
     def interface(self, external_component):
         self.external_component = external_component
         external_component_read_variable = self.external_component.interfacable
         external_component_read_variable_shape = external_component_read_variable.shape
         self.state["connected_components"].append(
-            external_component.parameters["ID"])
+            external_component.identifier)
         # read variable should be a 2d array containing spikes
         self.state["axonal_hillock_spikes_array"] = ncp.zeros(
             external_component_read_variable_shape)
-        projection_template = self.parameters["projection_template"]
+        
         axonal_hillock_spikes_array = self.state["axonal_hillock_spikes_array"]
         print("Arborizing axon \n")
-        if len(projection_template.shape) <= 1:
+        shape = self.projection_template.shape
+        if len(self.projection_template.shape) <= 1:
             print("Projection template has 1 axis")
             template_rolls = [[0, 0]]
             midX = 0
@@ -44,17 +56,17 @@ class DendriticArbor(NeuralStructure):
                     (axonal_hillock_spikes_array.shape[0], axonal_hillock_spikes_array.shape[1]))
                 current_spike_array = ncp.zeros(
                     (axonal_hillock_spikes_array.shape[0], axonal_hillock_spikes_array.shape[1]))
-        elif len(projection_template.shape) == 2:
+        elif len(shape) == 2:
             print("Neihbourhood_template has 2 axis: \n ###################### \n",
-                  projection_template)
+                  self.projection_template)
             print("######################")
-            midX = int(-projection_template.shape[0]/2)
-            midY = int(-projection_template.shape[1]/2)
+            midX = int(-shape[0]/2)
+            midY = int(-shape[1]/2)
             template_rolls = []
             max_level = 0
-            for i0 in range(projection_template.shape[0]):
-                for i1 in range(projection_template.shape[1]):
-                    if projection_template[i0, i1] == 1:
+            for i0 in range(shape[0]):
+                for i1 in range(shape[1]):
+                    if self.projection_template[i0, i1] == 1:
                         template_rolls.append([midX + i0, midY + i1])
                         max_level += 1
             if len(axonal_hillock_spikes_array.shape) <= 1:
@@ -95,7 +107,7 @@ class DendriticArbor(NeuralStructure):
     def set_boundry_conditions(self):
         kill_mask = self.state["kill_mask"]
         template_rolls = self.state["template_rolls"]
-        boundry_conditions = self.parameters["boundry_conditions"]
+        boundry_conditions = self.boundry_conditions
         if boundry_conditions == "closed":
             for index, roll in enumerate(template_rolls):
                 if roll[0] > 0:
@@ -108,15 +120,15 @@ class DendriticArbor(NeuralStructure):
                     kill_mask[:, (roll[1]):, index] = 0
     def kill_connections_based_on_distance(self, base_distance=0):
         '''
-        Base distance is the distance additional to the x,y plane. So for example if you wish to
-        create a 3D network you can create two populations, but set the base distance to 1, when
-        killing connections between the two layers
+            Base distance is the distance additional to the x,y plane. So for example if you wish to
+            create a 3D network you can create two populations, but set the base distance to 1, when
+            killing connections between the two layers
         '''
         template_rolls = self.state["template_rolls"]
         population_size = self.state["population_size"]
         kill_mask = self.state["kill_mask"]
-        C = self.parameters["distance_based_connection_probability"]["C"]
-        lambda_parameter = self.parameters["distance_based_connection_probability"]["lambda_parameter"]
+        C = self.distance_based_connection_probability["C"]
+        lambda_parameter = self.distance_based_connection_probability["lambda_parameter"]
         nr_of_rolls = template_rolls.shape[0]
         base_distances = ncp.ones(nr_of_rolls)
         base_distances = base_distances[:, ncp.newaxis]
