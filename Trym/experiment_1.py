@@ -81,29 +81,44 @@ def get_results(futures_list):
     for i in range(len(futures_list)):
         futures_list[i].result()
         
-graph_length = 6
+graph_length = 120
 sim_length = 10
 
 current_values = np.zeros(graph_length)
 new_values = np.zeros(graph_length)
 
 if __name__ == "__main__":
-    with Client(n_workers = 3) as client:
+    # with SLURMCluster(cores=6,
+    #                         processes=4,
+    #                         memory="1024GB",
+    #                         project="dashproject",
+    #                         walltime="01:00:00",
+    #                         queue="defq") as cluster:
+
+    with Client(n_workers = graph_length) as client:
+
+        print("submitting nodes")
         graph = []
         for i in range(graph_length):
             graph.append(client.submit(TestNode, {"ID":i}, actor = True))
+        print("getting node proxies")
         for i in range(graph_length):
             graph[i] = graph[i].result()
         
         futures = []
+        print("connecting nodes")
         for i in range(graph_length):
             futures.append(graph[i].connect("current_value", "new_value", graph[i-1], i-1))
+        print("getting connection results")
         get_results(futures)
         
+        print("setting current value of node 0 as 1")
         graph[0].set_current_value(1).result()
         
-        t0 = time.time()
+        
+        print("starting simulation")
         for t in range(sim_length):
+            t0 = time.time()
             print(t)
             print("computing new values")
             futures = []
@@ -122,6 +137,6 @@ if __name__ == "__main__":
             for i in range(graph_length):
                 futures.append(graph[i].update_current_distributed())
             get_results(futures)
-        print(time.time() - t0)
+            print(time.time() - t0)
             
             
