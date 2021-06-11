@@ -176,9 +176,19 @@ def copy_graph_genome(graph_genome, new_name):
     graph_copy["identifier"] = new_name
     return graph_copy
 
+def find_nr_of_nodes(graph_genome):
+    nr_of_nodes = 0
+    if "graphs" in graph_genome:
+        for graph in graph_genome["graphs"]:
+            sub_graph_genome = graph_genome["graphs"][graph]
+            nr_of_nodes += find_nr_of_nodes(sub_graph_genome)
+        return nr_of_nodes 
+    elif "nodes" in graph_genome:
+        nodes = graph_genome["nodes"]
+        nr_of_nodes = len(nodes)
+        return nr_of_nodes
 
-def embed_sub_graph(super_graph, sub_graph):
-    pass
+
 
 
 def set_node_value_in_genome(graph_genome, map_list, value):
@@ -247,9 +257,16 @@ class DistributedGraph:
         self.get_results(futures)
         
     def swap_node(self, node_name, parameters):
+        parameters["identifier"] = self.nodes[node_name].get_parameter_value("identifier").result()
+        
         node_type = self.available_classes[parameters["type"]]
-        self.nodes[node_name] = self.client.submit(node_type, parameters, actor = True).result()
+
+        if node_name in self.nodes:
+            self.nodes[node_name] = self.client.submit(node_type, parameters, actor = True).result()
+        else:
+            print("Node with the name: ", node_name, " not found")
         map_list = node_name.split("-")
+        map_list = map_list[1:]
         map_list.append("parameters")
         set_node_value_in_genome(self.graph_genome, map_list, parameters)
 
@@ -334,38 +351,22 @@ class DistributedGraph:
         try:
             os.makedirs(folder_name)
 
-            '''
-            for folder_name in create_folder_tree_names_from_genome(self.graph_genome, folder_name):
-                print(folder_name)
-                os.makedirs(folder_name)
-                node_identifier = folder_name.split('/')
-                node_identifier = node_identifier[1:]
-                node_identifier = '-'.join(node_identifier)
-                memories = self.nodes[node_identifier].get_memories().result()
-                for variable_name, memory in memories.items():
-                    file_name = os.path.join(folder_name, variable_name)
-                    np.save(file_name, memory)
-            '''
-
-                
-            
         except FileExistsError:
             print()
-            folder_name = input("A folder with the name  name\n New name: ")
+            folder_name = input("A folder with the name: ", folder_name, " already exists","\"n New name: ")
             os.makedirs(folder_name)
             #To do: Allow user to provide new name in terminal
         
         for identifier, node in self.nodes.items():
-
             sub_folder_name = identifier.split('-')
             sub_folder_name = '/'.join(sub_folder_name)
             sub_folder_name = os.path.join(folder_name, sub_folder_name)
 
             memories = node.get_memories().result()
+
             if len(memories) > 0:
                 os.makedirs(sub_folder_name)
                 for variable_name, memory in memories.items():
-                        
                         file_name = os.path.join(sub_folder_name, variable_name)
                         np.save(file_name, memory)
         
@@ -686,9 +687,13 @@ if __name__ == "__main__":
     }
 
     
+    nr_of_nodes = find_nr_of_nodes(super_duper_graph)
+    print(nr_of_nodes)
     sim_length = 10
 
-    with Client(n_workers = 12) as client:
+
+
+    with Client(n_workers = nr_of_nodes) as client:
         '''
         When we actually build a graph we first need to initialize an instance of the class graph. If creating a fully distributed graph
         we use the DistributedGraph class which will send every node to a separate worker if enough are available
@@ -735,9 +740,9 @@ if __name__ == "__main__":
             "memories":["c"]
         }
         graph_2 = DistributedGraph(client, available_classes)
-        graph_2.load_graph("super_duper_graph")
+        graph_2.load_graph("super_duper_graph", swappable_nodes = True)
         graph_2.construct_nodes()
-        graph_2.swap_node("super_graph_0-sub_graph_1-node_0", new_node_parameters)
+        graph_2.swap_node("super_duper_graph-super_graph_0-sub_graph_1-node_0", new_node_parameters)
         graph_2.connect_nodes()
         graph_2.save_graph("super_duper_graph_modified")
 
