@@ -8,7 +8,9 @@ from dask.distributed import Client
 from copy import deepcopy
 import json
 import os
-
+from functools import reduce 
+import operator
+import sys
 
 class Node:
     def __init__ (self, parameters):
@@ -23,11 +25,11 @@ class Node:
         self.connected_distributed_nodes = {}
         self.t = 0
 
-        if "memories" in self.parameters.items():
+        
+        if "memories" in self.parameters:
             for key in self.parameters["memories"]:
                 self.memories[key] = []
-        else:
-            self.memories = []
+        
         
     def copy_next_state_from_current_state(self):
         for key in self.current_state:
@@ -76,9 +78,6 @@ class Node:
             
             np.copyto(internal_value, external_value)
         
-        
-        
-    
     async def update_current_distributed(self):
         '''
         Because workers may only have one thread we cannot necessarily call another node on the same
@@ -93,7 +92,7 @@ class Node:
             external_value_name = self.connected_distributed_nodes[node_identifier]["external_value"]
             
             internal_value = self.current_state[internal_value_name]
-            external_value = await self.connected_distributed_nodes[node_identifier]["node"].get_next_state_value(external_value_name)
+            external_value = await external_node.get_next_state_value(external_value_name)
             # ToDo: Consider adapting external value call so that it does not need to call result() but instead get futures
             # ToDo: Consider allowing the get_value() call to return multiple values in case more than one is needed from the same node
             
@@ -162,6 +161,10 @@ class Node:
         self.next_state = state["next_state"]
         self.static_state = state["static_state"]
 
+    def set_static_state_variable(self, variable_name, new_value):
+        self.static_state[variable_name] = new_value
+        
+
     def get_results(self, futures_list):
         for i in range(len(futures_list)):
             futures_list[i].result()
@@ -178,29 +181,52 @@ def embed_sub_graph(super_graph, sub_graph):
     pass
 
 
+def set_node_value_in_genome(graph_genome, map_list, value):
+    if "graphs" in graph_genome:
+        sub_graphs = graph_genome["graphs"]
+        target_graph = sub_graphs[map_list[0]]
+        set_node_value_in_genome(target_graph, map_list[1:], value)
+    elif "nodes" in graph_genome:
+        nodes = graph_genome["nodes"]
+        target_node = nodes[map_list[0]]
+        target_node[map_list[1]] = value
+    else:
+        print("Could not find target, please check if location of node is correct")
+        print("Current map is: ", map_list)
+        sys.exit(0)
 
         
 class DistributedGraph:
-    def __init__(self, client):
+    def __init__(self, client, available_classes):
         self.client = client
+
+        self.available_classes = available_classes
+        
   
     def construct_distributed_graph(self, graph_genome):
         self.graph_genome = graph_genome
-        available_classes = {
-            "TestNode":TestNode
-        }
+        self.construct_nodes(graph_genome)
+        self.connect_nodes(graph_genome)
+
+    def construct_nodes(self, graph_genome = ""):
+        if graph_genome == "":
+            graph_genome = self.graph_genome
+
         self.nodes = {}
         for node_data in find_node_parameters(graph_genome):
             identifier = node_data["identifier"]
             parameters = node_data["parameters"]
             parameters["identifier"] = identifier
 
-            node_type = available_classes[parameters["type"]]
+            node_type = self.available_classes[parameters["type"]]
             self.nodes[identifier] = self.client.submit(node_type, parameters, actor = True)
         
         for identifier in self.nodes:
             self.nodes[identifier] = self.nodes[identifier].result()
 
+    def connect_nodes(self, graph_genome = ""):
+        if graph_genome == "":
+            graph_genome = self.graph_genome
         futures = []
         self.connections = []
         for connection in find_node_connections(graph_genome):
@@ -220,20 +246,17 @@ class DistributedGraph:
         
         self.get_results(futures)
         
+    def swap_node(self, node_name, parameters):
+        node_type = self.available_classes[parameters["type"]]
+        self.nodes[node_name] = self.client.submit(node_type, parameters, actor = True).result()
+        map_list = node_name.split("-")
+        map_list.append("parameters")
+        set_node_value_in_genome(self.graph_genome, map_list, parameters)
+
+    def set_node_static_state_variable(self, node_name, variable_name, new_value):
+        self.nodes[node_name].set_static_state_variable(variable_name, name_value)
+
     
-    def increment(self):
-        futures = []
-        for identifier, node in self.nodes.items():
-            future = node.compute_next()
-            futures.append(future)
-        self.get_results(futures)
-
-        futures = []
-        for identifier, node in self.nodes.items():
-            future = node.update_current()
-            futures.append(future)
-        self.get_results(futures)
-
     def save_graph(self, folder_name = ""):
         try:
             if folder_name == "":
@@ -252,7 +275,7 @@ class DistributedGraph:
         base_path = os.getcwd()
         file_name = os.path.join(base_path, folder_name, "graph_genome.json")
         with open(file_name, "w") as fp:
-            json.dump(self.graph_genome, fp)
+            json.dump(self.graph_genome, fp, sort_keys = False, indent = 4)
 
         
         for identifier, node in self.nodes.items():
@@ -264,14 +287,14 @@ class DistributedGraph:
                     file_name = os.path.join(base_path, folder_name, file_name)
                     np.save(file_name, state[state_type][state_name])
 
-    def load_graph(self, folder_name):
+    def load_graph(self, folder_name, swappable_nodes = False):
         base_path = os.getcwd()
         file_name = os.path.join(base_path, folder_name, "graph_genome.json")
         with open(file_name) as json_file:
             self.graph_genome = json.load(json_file)
             
 
-        self.construct_distributed_graph(self.graph_genome) 
+        self.construct_nodes(self.graph_genome) 
 
         futures = []
         for identifier, node in self.nodes.items():
@@ -289,30 +312,86 @@ class DistributedGraph:
             future = node.set_state(loaded_state)
             futures.append(future)
         self.get_results(futures)
-        
-    def save_memories(self, folder_name = ""):
-        try:
-            if folder_name == "":
-                folder_name = self.graph_genome["identifier"]
 
-            folder_name = os.path.join(folder_name, "simulation_run_1")
+        if swappable_nodes == False:
+            self.connect_nodes
+        
+    def increment(self):
+        futures = []
+        for identifier, node in self.nodes.items():
+            future = node.compute_next()
+            futures.append(future)
+        self.get_results(futures)
+
+        futures = []
+        for identifier, node in self.nodes.items():
+            future = node.update_current()
+            futures.append(future)
+        self.get_results(futures)
+    
+    
+    def save_memories(self, folder_name):
+        try:
             os.makedirs(folder_name)
+
+            '''
+            for folder_name in create_folder_tree_names_from_genome(self.graph_genome, folder_name):
+                print(folder_name)
+                os.makedirs(folder_name)
+                node_identifier = folder_name.split('/')
+                node_identifier = node_identifier[1:]
+                node_identifier = '-'.join(node_identifier)
+                memories = self.nodes[node_identifier].get_memories().result()
+                for variable_name, memory in memories.items():
+                    file_name = os.path.join(folder_name, variable_name)
+                    np.save(file_name, memory)
+            '''
+
+                
             
         except FileExistsError:
             print()
             folder_name = input("A folder with the name  name\n New name: ")
-            self.graph_genome["indentifier"] = folder_name
             os.makedirs(folder_name)
             #To do: Allow user to provide new name in terminal
         
-        for identifier, node in self.nodes:
+        for identifier, node in self.nodes.items():
 
-            
+            sub_folder_name = identifier.split('-')
+            sub_folder_name = '/'.join(sub_folder_name)
+            sub_folder_name = os.path.join(folder_name, sub_folder_name)
+
+            memories = node.get_memories().result()
+            if len(memories) > 0:
+                os.makedirs(sub_folder_name)
+                for variable_name, memory in memories.items():
+                        
+                        file_name = os.path.join(sub_folder_name, variable_name)
+                        np.save(file_name, memory)
+        
+    
+             
     def get_results(self, futures_list):
         for i in range(len(futures_list)):
             futures_list[i].result()
 
 
+def create_folder_tree_names_from_genome(graph_genome, folder_name = ""):
+    if "identifier" in graph_genome:
+        if folder_name == "":
+            full_folder_name = graph_genome["identifier"]
+        else:
+            full_folder_name = os.path.join(folder_name, graph_genome["identifier"])
+    else:
+        full_folder_name = folder_name
+
+    if hasattr(graph_genome,'items'):
+        for k, v in graph_genome.items():
+            if k == "parameters": 
+                yield full_folder_name
+            if isinstance(v, dict):
+                for result in create_folder_tree_names_from_genome(v, full_folder_name):
+                    yield result
 
 def find_node_parameters(graph_genome, identifier = ""):
     # based of: https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-dictionaries-and-lists
@@ -371,7 +450,7 @@ class TestNode(Node):
         b_size = self.parameters["b_size"]
         c_size = self.parameters["c_size"]
 
-        # First create internal variables and call copy_next_state_from_current_state to create arrays of same size and type in next_state
+        # First create internal variables that has next_state and call copy_next_state_from_current_state to create arrays of same size and type in next_state
         self.current_state["a"] = np.zeros(a_size)
         self.current_state["b"] = np.zeros(b_size)
         self.copy_next_state_from_current_state() # maybe a poor implementation? Will fuck up update_internal() if used in the wrong order
@@ -395,26 +474,28 @@ class TestNode(Node):
 
         static_m = self.static_state["m"]
         
-        
         np.copyto(next_a, (current_a - current_b) + current_c * static_m)
         np.copyto(next_b, (current_c + current_b) + current_a * static_m)
         
 
 
-class TestNode1(Node):
+class TestNodeDelay(Node):
     '''
     This class should demonstrate how to create subclasses of node
     '''
     def __init__(self, parameters):
         super().__init__(parameters)
         a_size = self.parameters["a_size"]
-        b_size = self.parameters["b_size"]
+        b_size = self.parameters["b"]["size"]
+        b_delay = self.parameters["b"]["delay"]
         c_size = self.parameters["c_size"]
 
         # First create internal variables and call copy_next_state_from_current_state to create arrays of same size and type in next_state
         self.current_state["a"] = np.zeros(a_size)
-        self.current_state["b"] = np.zeros(b_size)
         self.copy_next_state_from_current_state() # maybe a poor implementation? Will fuck up update_internal() if used in the wrong order
+
+        # Create internal variables that do not require a next state
+        self.current_state["b"] = np.zeros((b_size, b_delay))
 
         # Then create current values for those variables that the node does not itself compute next_states for
         self.current_state["c"] = np.zeros(c_size)
@@ -426,18 +507,20 @@ class TestNode1(Node):
         
     def compute_next(self):
         #time.sleep(1)
-        current_a = self.current_state["a"]
-        current_b = self.current_state["b"]
-        current_c = self.current_state["c"]
+        c_a = self.current_state["a"]
+        c_b = self.current_state["b"]
+        c_c = self.current_state["c"]
 
-        next_a = self.next_state["a"]
-        next_b = self.next_state["b"]
+        n_a = self.next_state["a"]
 
-        static_m = self.static_state["m"]
+        s_m = self.static_state["m"]
         
         
-        np.copyto(next_a, (current_a - current_b) + current_c * static_m)
-        np.copyto(next_b, (current_c + current_b) + current_a * static_m)
+        np.copyto(n_a, (c_a - c_b[:,-1]) + c_c * s_m)
+        n_b = np.roll(c_b, 1, axis = 1)
+        n_b[:,0] = c_a
+        np.copyto(c_b, n_b)
+
         
    
 
@@ -470,7 +553,7 @@ if __name__ == "__main__":
                                     - the first element is the identifier of the out-node (using graph notation of directed edges)
                                     - the second is the identifier of the in-node
                                 - the second element is another list with two elements
-                                    - the first is the state variable in the out-node that forms that is transfered to the out-node
+                                    - the first is the state variable in the out-node that is transfered to the out-node
                                     - the second is the state variable in the in-node that receives the state variable from the out-node
     
     '''
@@ -488,7 +571,7 @@ if __name__ == "__main__":
                         "lower_bound":0,
                         "upper_bound":1
                     },
-                    "memories":[]
+                    "memories":["a"]
                 }
             },
             "node_1":{
@@ -516,7 +599,7 @@ if __name__ == "__main__":
                         "lower_bound":0,
                         "upper_bound":1
                     },
-                    "memories":[]
+                    "memories":["c"]
                 }
             }
         },
@@ -585,7 +668,8 @@ if __name__ == "__main__":
         "identifier":"super_duper_graph",
         "graphs":{
             "super_graph_0":super_graph_0,
-            "super_graph_1":super_graph_1
+            "super_graph_1":super_graph_1,
+            "sub_graph_0":sub_graph_0
         },
         "connections":[
             [
@@ -594,6 +678,9 @@ if __name__ == "__main__":
             ],[
                 ["super_graph_1-sub_graph_2-node_2", "super_graph_0-sub_graph_0-node_0"],
                 ["c","a"]  
+            ],[
+                ["super_graph_1-sub_graph_2-node_2", "sub_graph_0-node_0"],
+                ["c", "a"]
             ]
         ]
     }
@@ -607,7 +694,11 @@ if __name__ == "__main__":
         we use the DistributedGraph class which will send every node to a separate worker if enough are available
         The graph is initialized simply by giving it the client used by dask to schedule workers
         '''
-        graph = DistributedGraph(client)
+        available_classes = {
+            "TestNode":TestNode,
+            "TestNodeDelay":TestNodeDelay
+        }
+        graph = DistributedGraph(client, available_classes)
 
         '''
         The next step is to create the graph itself which we do by calling construct_distributed_graph with the genome as input
@@ -628,9 +719,34 @@ if __name__ == "__main__":
         To incremenet the graph forward one time step we call increment. And to run a simulation we do this inside a for loop
 
         '''
+
+        new_node_parameters = {
+            "type":"TestNodeDelay",
+            "a_size":1,
+            "b":{
+                "size":1,
+                "delay":3
+            },
+            "c_size":1,
+            "m":{
+                "lower_bound":0,
+                "upper_bound":1
+            },
+            "memories":["c"]
+        }
+        graph_2 = DistributedGraph(client, available_classes)
+        graph_2.load_graph("super_duper_graph")
+        graph_2.construct_nodes()
+        graph_2.swap_node("super_graph_0-sub_graph_1-node_0", new_node_parameters)
+        graph_2.connect_nodes()
+        graph_2.save_graph("super_duper_graph_modified")
+
         for t in range(sim_length):
             graph.increment()
+            graph_2.increment()
         
+        graph.save_memories("simulation_1")
+        graph_2.save_memories("modified_simulation_1")
         '''
         If your node parameters contain any variable names under the memories key you can now have these returned to the main script and saved 
         for later analysis using .save_memories() This will create a new folder with the data
