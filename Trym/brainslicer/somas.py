@@ -1,4 +1,5 @@
 import numpy as ncp
+import sys
 from .neural_structure import NeuralStructure
 from .support_classes import InterfacableArray
 from .membrane_equations import IntegrateAndFireNeuronMembraneFunction
@@ -19,14 +20,14 @@ class BaseIntegrateAndFireSoma(NeuralStructure):
     new_somatic_voltages = 0
     current_u = 0
     summed_inputs = 0
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
-        if len(self.parameters["population_size"]) != 2:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if len(self.population_size) != 2:
             print(
                 "Population size must be size 2 and give population size in x and y dimensions")
             sys.exit(0)
-        population_size = self.parameters["population_size"]
-        refractory_period = self.parameters["refractory_period"]
+        population_size = self.population_size
+        refractory_period = self.refractory_period
 
         self.state["time_since_last_spike"] = ncp.ones(
             population_size) + refractory_period + 1
@@ -80,15 +81,15 @@ class BaseIntegrateAndFireSoma(NeuralStructure):
     def set_refractory_values(self):
         new_somatic_voltages = self.state["new_somatic_voltages"]
         time_since_last_spike = self.state["time_since_last_spike"]
-        refractory_period = self.parameters["refractory_period"]
+        refractory_period = self.refractory_period
         reset_voltage = self.state["reset_voltage"]
         # set somatic voltages to the reset value if within refractory period
         new_somatic_voltages *= time_since_last_spike > refractory_period
         new_somatic_voltages += (time_since_last_spike <=
                                  refractory_period) * reset_voltage
     def compile_data(self):
-        data = {"parameters": self.parameters, "state": self.state}
-        return self.parameters["ID"], data
+        data = {"parameters": self.__dict__, "state": self.state}
+        return self.ID, data
     def compute_new_values(self):
         raise NotImplementedError
         sys.exit(1)
@@ -107,136 +108,136 @@ class BaseIntegrateAndFireSoma(NeuralStructure):
         return(2)
 
 class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
-        population_size = self.parameters["population_size"]
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        population_size = self.population_size
 
-        if self.parameters["reset_voltage"]["distribution"] == "homogenous":
-            self.state["reset_voltage"] = self.parameters["reset_voltage"]["value"]
-        elif self.parameters["reset_voltage"]["distribution"] == "normal":
-            mean = self.parameters["reset_voltage"]["mean"]
-            SD = self.parameters["reset_voltage"]["SD"]
+        if self.reset_voltage["distribution"] == "homogenous":
+            self.state["reset_voltage"] = self.reset_voltage["value"]
+        elif self.reset_voltage["distribution"] == "normal":
+            mean = self.reset_voltage["mean"]
+            SD = self.reset_voltage["SD"]
             self.state["reset_voltage"] = ncp.random.normal(
                 mean, SD, population_size)
             reset_voltage = self.state["reset_voltage"]
-            if self.parameters["reset_voltage"]["pos_neg_uniformity"] == "positive":
+            if self.reset_voltage["pos_neg_uniformity"] == "positive":
                 remove_neg_values(reset_voltage, mean, SD)
-        elif self.parameters["reset_voltage"]["distribution"] == "uniform":
-            low = self.parameters["reset_voltage"]["low"]
-            high = self.parameters["reset_voltage"]["high"]
+        elif self.reset_voltage["distribution"] == "uniform":
+            low = self.reset_voltage["low"]
+            high = self.reset_voltage["high"]
             self.state["reset_voltage"] = ncp.random.uniform(
                 low, high, population_size)
-        elif self.parameters["reset_voltage"]["distribution"] == "Izhikevich":
+        elif self.reset_voltage["distribution"] == "Izhikevich":
             self.state["reset_voltage"] = ncp.zeros(population_size)
-            self.state["reset_voltage"] += self.parameters["reset_voltage"]["base_value"]
-            membrane_recovery_multiplier = self.parameters["reset_voltage"]["multiplier_value"]
+            self.state["reset_voltage"] += self.reset_voltage["base_value"]
+            membrane_recovery_multiplier = self.reset_voltage["multiplier_value"]
 
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
             membrane_recovery_variance = membrane_recovery_multiplier * random_variable
             self.state["reset_voltage"] += membrane_recovery_variance
-        if self.parameters["membrane_time_constant"]["distribution"] == "homogenous":
-            self.state["membrane_time_constant"] = self.parameters["membrane_time_constant"]["value"]
-        elif self.parameters["membrane_time_constant"]["distribution"] == "normal":
-            mean = self.parameters["membrane_time_constant"]["mean"]
-            SD = self.parameters["membrane_time_constant"]["SD"]
+        if self.membrane_time_constant["distribution"] == "homogenous":
+            self.state["membrane_time_constant"] = self.membrane_time_constant["value"]
+        elif self.membrane_time_constant["distribution"] == "normal":
+            mean = self.membrane_time_constant["mean"]
+            SD = self.membrane_time_constant["SD"]
             self.state["membrane_time_constant"] = ncp.random.normal(
                 mean, SD, population_size)
 
             membrane_time_constant = self.state["membrane_time_constant"]
-            if self.parameters["membrane_time_constant"]["pos_neg_uniformity"] == "positive":
+            if self.membrane_time_constant["pos_neg_uniformity"] == "positive":
                 remove_neg_values(membrane_time_constant, mean, SD)
-        elif self.parameters["membrane_time_constant"]["distribution"] == "uniform":
-            low = self.parameters["membrane_time_constant"]["low"]
-            high = self.parameters["membrane_time_constant"]["high"]
+        elif self.membrane_time_constant["distribution"] == "uniform":
+            low = self.membrane_time_constant["low"]
+            high = self.membrane_time_constant["high"]
             self.state["membrane_time_constant"] = ncp.random.uniform(
                 low, high, population_size)
-        elif self.parameters["membrane_time_constant"]["distribution"] == "Izhikevich":
+        elif self.membrane_time_constant["distribution"] == "Izhikevich":
             self.state["membrane_time_constant"] = ncp.zeros(population_size)
-            self.state["membrane_time_constant"] += self.parameters["membrane_time_constant"]["base_value"]
+            self.state["membrane_time_constant"] += self.membrane_time_constant["base_value"]
             
-            membrane_recovery_multiplier = self.parameters["membrane_time_constant"]["multiplier_value"]
+            membrane_recovery_multiplier = self.membrane_time_constant["multiplier_value"]
             
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
             membrane_recovery_variance = membrane_recovery_multiplier * random_variable
             self.state["membrane_time_constant"] += membrane_recovery_variance
-        if self.parameters["input_resistance"]["distribution"] == "homogenous":
-            self.state["input_resistance"] = self.parameters["input_resistance"]["value"]
-        elif self.parameters["input_resistance"]["distribution"] == "normal":
+        if self.input_resistance["distribution"] == "homogenous":
+            self.state["input_resistance"] = self.input_resistance["value"]
+        elif self.input_resistance["distribution"] == "normal":
             
-            mean = self.parameters["input_resistance"]["mean"]
-            SD = self.parameters["input_resistance"]["SD"]
+            mean = self.input_resistance["mean"]
+            SD = self.input_resistance["SD"]
             
             self.state["input_resistance"] = ncp.random.normal(
                 mean, SD, population_size)
             
             input_resistance = self.state["input_resistance"]
             
-            if self.parameters["input_resistance"]["pos_neg_uniformity"] == "positive":
+            if self.input_resistance["pos_neg_uniformity"] == "positive":
                 remove_neg_values(input_resistance, mean, SD)
-        elif self.parameters["input_resistance"]["distribution"] == "uniform":
+        elif self.input_resistance["distribution"] == "uniform":
             
-            low = self.parameters["input_resistance"]["low"]
-            high = self.parameters["input_resistance"]["high"]
+            low = self.input_resistance["low"]
+            high = self.input_resistance["high"]
             
             self.state["input_resistance"] = ncp.random.uniform(
                 low, high, population_size)
-        elif self.parameters["input_resistance"]["distribution"] == "Izhikevich":
+        elif self.input_resistance["distribution"] == "Izhikevich":
             self.state["input_resistance"] = ncp.zeros(population_size)
-            self.state["input_resistance"] += self.parameters["input_resistance"]["base_value"]
+            self.state["input_resistance"] += self.input_resistance["base_value"]
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
-            membrane_recovery_multiplier = self.parameters["input_resistance"]["multiplier_value"]
+            membrane_recovery_multiplier = self.input_resistance["multiplier_value"]
             membrane_recovery_variance = membrane_recovery_multiplier * random_variable
             self.state["input_resistance"] += membrane_recovery_variance
-        if self.parameters["threshold"]["distribution"] == "homogenous":
-            self.state["threshold"] = self.parameters["threshold"]["value"]
-        elif self.parameters["threshold"]["distribution"] == "normal":
-            mean = self.parameters["threshold"]["mean"]
-            SD = self.parameters["threshold"]["SD"]
+        if self.threshold["distribution"] == "homogenous":
+            self.state["threshold"] = self.threshold["value"]
+        elif self.threshold["distribution"] == "normal":
+            mean = self.threshold["mean"]
+            SD = self.threshold["SD"]
             self.state["threshold"] = ncp.random.normal(
                 mean, SD, population_size)
 
             threshold = self.state["threshold"]
-            if self.parameters["threshold"]["pos_neg_uniformity"] == "positive":
+            if self.threshold["pos_neg_uniformity"] == "positive":
                 remove_neg_values(threshold, mean, SD)
-        elif self.parameters["threshold"]["distribution"] == "uniform":
-            low = self.parameters["threshold"]["low"]
-            high = self.parameters["threshold"]["high"]
+        elif self.threshold["distribution"] == "uniform":
+            low = self.threshold["low"]
+            high = self.threshold["high"]
             self.state["threshold"] = ncp.random.uniform(
                 low, high, population_size)
-        elif self.parameters["threshold"]["distribution"] == "Izhikevich":
+        elif self.threshold["distribution"] == "Izhikevich":
             self.state["threshold"] = ncp.zeros(population_size)
-            self.state["threshold"] += self.parameters["threshold"]["base_value"]
+            self.state["threshold"] += self.threshold["base_value"]
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
-            membrane_recovery_multiplier = self.parameters["threshold"]["multiplier_value"]
+            membrane_recovery_multiplier = self.threshold["multiplier_value"]
             membrane_recovery_variance = membrane_recovery_multiplier * random_variable
             self.state["threshold"] += membrane_recovery_variance
-        if self.parameters["background_current"]["distribution"] == "homogenous":
-            self.state["background_current"] = self.parameters["background_current"]["value"]
-        elif self.parameters["background_current"]["distribution"] == "normal":
-            mean = self.parameters["background_current"]["mean"]
-            SD = self.parameters["background_current"]["SD"]
+        if self.background_current["distribution"] == "homogenous":
+            self.state["background_current"] = self.background_current["value"]
+        elif self.background_current["distribution"] == "normal":
+            mean = self.background_current["mean"]
+            SD = self.background_current["SD"]
             self.state["background_current"] = ncp.random.normal(
                 mean, SD, population_size)
             
             background_current = self.state["background_current"]
             
-            if self.parameters["background_current"]["pos_neg_uniformity"] == "positive":
+            if self.background_current["pos_neg_uniformity"] == "positive":
                 remove_neg_values(background_current, mean, SD)
-        elif self.parameters["background_current"]["distribution"] == "uniform":
-            low = self.parameters["background_current"]["low"]
-            high = self.parameters["background_current"]["high"]
+        elif self.background_current["distribution"] == "uniform":
+            low = self.background_current["low"]
+            high = self.background_current["high"]
             self.state["background_current"] = ncp.random.uniform(
                 low, high, population_size)
-        elif self.parameters["background_current"]["distribution"] == "Izhikevich":
+        elif self.background_current["distribution"] == "Izhikevich":
             self.state["background_current"] = ncp.zeros(population_size)
-            self.state["background_current"] += self.parameters["background_current"]["base_value"]
+            self.state["background_current"] += self.background_current["base_value"]
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
-            background_current_multiplier = self.parameters["background_current"]["multiplier_value"]
+            background_current_multiplier = self.background_current["multiplier_value"]
             background_current_variance = background_current_multiplier * random_variable
             self.state["background_current"] += background_current_variance
         
@@ -255,13 +256,13 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         membrane_function = CircuitEquation(
             input_resistance, membrane_time_constant, self.summed_inputs, background_current)
         self.membrane_solver = RungeKutta2(
-            membrane_function, self.parameters["time_step"])
+            membrane_function, self.time_step)
     def compute_new_values(self):
         '''
             
         '''
-        time_step = self.parameters["time_step"]
-        upper_limit = self.parameters["temporal_upper_limit"]
+        time_step = self.time_step
+        upper_limit = self.temporal_upper_limit
         time_since_last_spike = self.state["time_since_last_spike"]
         current_somatic_voltages = self.state["current_somatic_voltages"]
         new_somatic_voltages = self.state["new_somatic_voltages"]
@@ -286,86 +287,85 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         # return 1
 
 class IzhikevichSoma(BaseIntegrateAndFireSoma):
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
-        population_size = self.parameters["population_size"]
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        population_size = self.population_size
         self.state["current_u"] = ncp.zeros(population_size)
         self.state["new_u"] = ncp.zeros(population_size)
         # check if homogenous distributions for all parameters
         print("Checking distributions")
-        if self.parameters["membrane_recovery"]["distribution"] == "homogenous":
-            self.state["membrane_recovery"] = self.parameters["membrane_recovery"]["value"]
+        if self.membrane_recovery["distribution"] == "homogenous":
+            self.state["membrane_recovery"] = self.membrane_recovery["value"]
             print("membrane recovery was homogenous")
-        if self.parameters["resting_potential_variable"]["distribution"] == "homogenous":
-            self.state["resting_potential_variable"] = self.parameters["resting_potential_variable"]["value"]
+        if self.resting_potential_variable["distribution"] == "homogenous":
+            self.state["resting_potential_variable"] = self.resting_potential_variable["value"]
 
-        if self.parameters["reset_voltage"]["distribution"] == "homogenous":
-            self.state["reset_voltage"] = self.parameters["reset_voltage"]["value"]
+        if self.reset_voltage["distribution"] == "homogenous":
+            self.state["reset_voltage"] = self.reset_voltage["value"]
 
-        if self.parameters["reset_recovery_variable"]["distribution"] == "homogenous":
-            self.state["reset_recovery_variable"] = self.parameters["reset_recovery_variable"]["value"]
+        if self.reset_recovery_variable["distribution"] == "homogenous":
+            self.state["reset_recovery_variable"] = self.reset_recovery_variable["value"]
 
         # Check if Izhikevich dependnet (a,b)
-        if self.parameters["membrane_recovery"]["distribution"] == "Izhikevich":
+        if self.membrane_recovery["distribution"] == "Izhikevich":
             self.state["membrane_recovery"] = ncp.zeros(population_size)
-            self.state["membrane_recovery"] += self.parameters["membrane_recovery"]["base_value"]
+            self.state["membrane_recovery"] += self.membrane_recovery["base_value"]
                
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
-            membrane_recovery_multiplier = self.parameters["membrane_recovery"]["multiplier_value"]
+            membrane_recovery_multiplier = self.membrane_recovery["multiplier_value"]
             membrane_recovery_variance = membrane_recovery_multiplier * random_variable
             self.state["membrane_recovery"] += membrane_recovery_variance
 
-            if self.parameters["resting_potential_variable"]["distribution"] == "Izhikevich" and self.parameters["resting_potential_variable"]["dependent"] == "membrane_recovery":
+            if self.resting_potential_variable["distribution"] == "Izhikevich" and self.resting_potential_variable["dependent"] == "membrane_recovery":
                 self.state["resting_potential_variable"] = ncp.zeros(
                     population_size)
-                self.state["resting_potential_variable"] += self.parameters["resting_potential_variable"]["base_value"]
+                self.state["resting_potential_variable"] += self.resting_potential_variable["base_value"]
                 #random_variable = ncp.random.uniform(0,1,population_size)
 
-                resting_potential_multiplier = self.parameters[
-                    "resting_potential_variable"]["multiplier_value"]
+                resting_potential_multiplier = self.resting_potential_variable["multiplier_value"]
                 resting_potential_variance = random_variable * resting_potential_multiplier
                 self.state["resting_potential_variable"] += resting_potential_variance
 
-        if self.parameters["resting_potential_variable"]["distribution"] == "Izhikevich" and not (self.parameters["resting_potential_variable"]["dependent"] == "membrane_recovery"):
+        if self.resting_potential_variable["distribution"] == "Izhikevich" and not (self.resting_potential_variable["dependent"] == "membrane_recovery"):
             self.state["resting_potential_variable"] = ncp.zeros(
                 population_size)
-            self.state["resting_potential_variable"] += self.parameters["resting_potential_variable"]["base_value"]
+            self.state["resting_potential_variable"] += self.resting_potential_variable["base_value"]
             #random_variable = ncp.random.uniform(0,1,population_size)
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
 
-            resting_potential_multiplier = self.parameters["resting_potential_variable"]["multiplier_value"]
+            resting_potential_multiplier = self.resting_potential_variable["multiplier_value"]
             resting_potential_variance = random_variable * resting_potential_multiplier
             self.state["resting_potential_variable"] += resting_potential_variance
 
         # check if dependent Izhikevich distribution, (c,d)
-        if self.parameters["reset_recovery_variable"]["distribution"] == "Izhikevich":
+        if self.reset_recovery_variable["distribution"] == "Izhikevich":
             self.state["reset_recovery_variable"] = ncp.zeros(population_size)
-            self.state["reset_recovery_variable"] += self.parameters["reset_recovery_variable"]["base_value"]
+            self.state["reset_recovery_variable"] += self.reset_recovery_variable["base_value"]
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
-            reset_recovery_multiplier = self.parameters["reset_recovery_variable"]["multiplier_value"]
+            reset_recovery_multiplier = self.reset_recovery_variable["multiplier_value"]
             reset_recovery_variance = reset_recovery_multiplier * random_variable
             self.state["reset_recovery_variable"] += reset_recovery_variance
 
-            if self.parameters["reset_voltage"]["distribution"] == "Izhikevich" and self.parameters["reset_voltage"]["dependent"] == "reset_recovery_variable":
+            if self.reset_voltage["distribution"] == "Izhikevich" and self.reset_voltage["dependent"] == "reset_recovery_variable":
                 self.state["reset_voltage"] = ncp.zeros(population_size)
-                self.state["reset_voltage"] += self.parameters["reset_voltage"]["base_value"]
+                self.state["reset_voltage"] += self.reset_voltage["base_value"]
                 #random_variable = ncp.random.uniform(0,1,population_size)
 
-                reset_voltage_multiplier = self.parameters["reset_voltage"]["multiplier_value"]
+                reset_voltage_multiplier = self.reset_voltage["multiplier_value"]
                 reset_voltage_variance = random_variable * reset_voltage_multiplier
                 self.state["reset_voltage"] += reset_voltage_variance
 
-        if self.parameters["reset_voltage"]["distribution"] == "Izhikevich" and not (self.parameters["reset_voltage"]["dependent"] == "reset_recovery_variable"):
+        if self.reset_voltage["distribution"] == "Izhikevich" and not (self.reset_voltage["dependent"] == "reset_recovery_variable"):
             self.state["reset_voltage"] = ncp.zeros(population_size)
-            self.state["reset_voltage"] += self.parameters["reset_voltage"]["base_value"]
+            self.state["reset_voltage"] += self.reset_voltage["base_value"]
             #random_variable = ncp.random.uniform(0,1,population_size)
             random_variable = ncp.random.uniform(0, 1, population_size)
             random_variable = random_variable**2
 
-            reset_voltage_multiplier = self.parameters["reset_voltage"]["multiplier_value"]
+            reset_voltage_multiplier = self.reset_voltage["multiplier_value"]
             reset_voltage_variance = random_variable * reset_voltage_multiplier
             self.state["reset_voltage"] += reset_voltage_variance
 
@@ -384,8 +384,8 @@ class IzhikevichSoma(BaseIntegrateAndFireSoma):
         self.set_membrane_function()
 
     def set_membrane_function(self):
-        time_step = self.parameters["time_step"]
-        population_size = self.parameters["population_size"]
+        time_step = self.time_step
+        population_size = self.population_size
         summed_inputs = self.state["summed_inputs"]
         membrane_recovery = self.state["membrane_recovery"]
         resting_potential_variable = self.state["resting_potential_variable"]
@@ -396,9 +396,9 @@ class IzhikevichSoma(BaseIntegrateAndFireSoma):
         self.membrane_solver = RungeKutta2(membrane_function, time_step)
 
     def compute_new_values(self):
-        time_step = self.parameters["time_step"]
-        threshold = self.parameters["threshold"]
-        upper_limit = self.parameters["temporal_upper_limit"]
+        time_step = self.time_step
+        threshold = self.threshold
+        upper_limit = self.temporal_upper_limit
 
         current_somatic_voltages = self.state["current_somatic_voltages"]
         current_u = self.state["current_u"]

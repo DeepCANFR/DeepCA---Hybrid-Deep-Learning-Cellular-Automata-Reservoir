@@ -11,24 +11,29 @@ class NeuralStructure(object):
 
     '''
 
+    parameters: dict
+    state: dict
     interfacable = 0
-
     component_IDs = []
 
-    parameters = {}
 
-    state = {}
-
-
-    def __init__(self, parameter_dict: dict):
-
-        self.parameters = parameter_dict
-
-        self.state = {}
-
-        self.state["connected_components"] = []
+    def __init__(self, initial_state={}, connected_components=[], **kwargs):
+        '''
+            In order for an object to be a neural structure it must have the following attributes:
+            Required parameters:
+                -
+        '''
+        self.__dict__.update(kwargs)
+        self.state = initial_state
+        self.state["connected_components"] = connected_components
 
         #time.sleep(0.5)
+
+    def connect(self, compenent):
+        '''
+            Adds a component to connected components.
+        '''
+        self.state['connected_components'].append(compenent)
 
 
     def reconstruct_interface(self, external_component):
@@ -62,19 +67,15 @@ class NeuralStructure(object):
 
     def compile_data(self):
 
-        data = {"parameters": self.parameters, "state":self.state}
+        data = {"parameters": self.__dict__, "state":self.state}
 
-        return [self.parameters["ID"], data]
+        return [self.ID, data]
 
 
     def set_state(self, state):
 
         raise NotImplementedError
-    
 
-    def set_parameters(self, parameters):
-
-        self.parameters = parameters
 
     def set_indexes(self,population_size):
         self.indexes = []

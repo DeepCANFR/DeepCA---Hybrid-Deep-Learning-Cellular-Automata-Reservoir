@@ -12,34 +12,30 @@ Input classes
 
 class InputsDistributeSingleSpike(NeuralStructure):
 
-    parameters = {}
 
-    interfacable = 0
+    def __init__(self, **kwargs):
+        '''
+            if percent is supplied as a parameter ... TODO
+        '''
 
-
-    def __init__(self, parameter_dict):
-
-        super().__init__(parameter_dict)
-
-
-        population_size = self.parameters["population_size"]
-
-        self.state["population_size"] = population_size
-
-        self.state["new_inputs"] = ncp.zeros(population_size)
-
-        self.state["current_inputs"] = ncp.zeros(population_size)
-
-        self.state["input_mask"] = 1
+        super().__init__(**kwargs)
+        interfacable = 0
 
 
-        if "percent" in self.parameters:
+        population_size = self.population_size
 
-            input_mask = ncp.random.uniform(
 
-                0, 1, population_size) < self.parameters["percent"]
+        self.state = {"population_size": population_size,
+                      "new_inputs":ncp.zeros(population_size),
+                      "current_inputs": ncp.zeros(population_size),
+                      "input_mask": 1}
 
-            self.state["input_mask"] = input_mask
+
+        if self.percent:
+            random_mask = ncp.random.uniform(low=0, high=1,
+                                             size=population_size)
+            self.state["input_mask"] = random_mask < self.percent
+            
 
 
         self.interfacable = self.state["new_inputs"]
