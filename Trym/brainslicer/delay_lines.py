@@ -5,99 +5,69 @@
 '''
 
 
-import numpy as ncp
-from .neural_structure import NeuralStructure
+import numpy as np
+import sys
+from .nodes import Node
 
+class DelayLineNode(Node):
+    '''
+    DelayLines simulates simplified axons. Their input is an array of spikes from some source. 
+    The delay is implemented as a population_size + delay_in_time_steps shaped array. 
+    '''
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        population_size = self.parameters["population_size"]
+        
+        # current state with next
+        self.current_state["spike_output"] = np.zeros(population_size)
+        self.copy_next_state_from_current_state()
 
+        # current without next
+        self.current_state.update({
+            "spike_source":np.zeros(population_size),
+            "time_step_nr":np.array(0),
 
-class DelayLine(NeuralStructure):
+        })
 
-    interfacable = 0
+        # find length of delay in timesteps
+        time_step = self.parameters["time_step"]
+        delay = self.parameters["delay"]
+        delay_in_time_steps = delay/time_step
 
+        # for all inputs to be stored in a delay line the number of indexes must be equal to the number of 
+        # time_steps of the delay. If this is not an integer number we cannot create an accurate delay
+        # because we cannot have a non-integer number of indexes over the time axis
+        # therefor the user is prompted to choose different values
+        if not delay_in_time_steps.is_integer():
+            print("delay / time_step produced non integer number. This will result in inaccurate delay time. Please choose different time-step or delay")
+            sys.exit(0)
+        else:
+            delay_line_shape = np.concatenate((np.array([delay_in_time_steps]), np.array(population_size)))
+            delay_line_shape = delay_line_shape.astype(np.int64)
+            self.current_state.update({
+                                "delay_line":np.zeros(delay_line_shape),
+                                
+            })
 
-    def __init__(self, parameter_dict):
+        # static state
+        self.static_state.update({
+            "delay_in_time_steps":np.array(delay_in_time_steps)
+        })
 
-        super().__init__(parameter_dict)
+    def compute_next(self):
+        spike_source = self.current_state["spike_source"]
+        delay_line = self.current_state["delay_line"]
+        time_step_nr = self.current_state["time_step_nr"] # maybe not use array? How long will people simulate for?
+        
+        spike_output = self.next_state["spike_output"]
+        
+        delay_in_time_steps = self.static_state["delay_in_time_steps"]
 
+        # ToDo: create implementation that doesn't use roll, but indexing instead (increasing indexes, see tryouts.py)
+        next_delay_line = np.roll(delay_line, 1, axis = 0)
+        next_delay_line[0,:,:] = spike_source[:,:] # ToDo: make it so it works with arbitrary shape (keep time to axis 0)
 
-        self.state["delay_in_compute_steps"] = int(
+        np.copyto(delay_line, next_delay_line)
 
-            self.parameters["delay"] / self.parameters["time_step"])
-
-
-    def interface(self, external_component):
-
-        delay_in_compute_steps = self.state["delay_in_compute_steps"]
-
-
-
-        self.external_component = external_component
-
-        external_component_read_variable = self.external_component.interfacable
-
-        external_component_read_variable_shape = external_component_read_variable.shape
-
-
-        # read_variable should be a 2d array of spikes
-
-        self.state["spike_source"] = ncp.zeros(
-
-            external_component_read_variable_shape)
-        spike_source = self.state["spike_source"]
-
-
-        self.state["delay_line"] = ncp.zeros(
-
-            (spike_source.shape[0], spike_source.shape[1], delay_in_compute_steps))
-
-        self.state["new_spike_output"] = ncp.zeros(spike_source.shape)
-
-        self.state["current_spike_output"] = ncp.zeros(spike_source.shape)
-
-
-        self.interfacable = self.state["new_spike_output"]
-
-
-    def set_state(self, state):
-        self.state = state
-
-        self.interfacable = self.state["new_spike_output"]
-
-
-    def compute_new_values(self):
-
-        delay_line = self.state["delay_line"]
-
-        new_spike_output = self.state["new_spike_output"]
-        spike_source = self.state["spike_source"]
-
-
-
-        delay_line[:, :, :] = ncp.roll(delay_line, 1, axis=2)
-
-        new_spike_output[:, :] = delay_line[:, :, -1]
-
-        delay_line[:, :, 0] = spike_source
-
-        # return ncp.amax(self.new_spike_output)
-
-        # print("new")
-
-        # return 1
-
-
-    def update_current_values(self):
-        current_spike_output = self.state["current_spike_output"]
-
-        new_spike_output = self.state["new_spike_output"]
-        spike_source = self.state["spike_source"]
-
-
-        current_spike_output[:, :] = new_spike_output
-
-        spike_source[:, :] = self.external_component.interfacable
-
-        # print("update")
-
-        # return 2
+        np.copyto(spike_output, delay_line[-1,:,:])
 

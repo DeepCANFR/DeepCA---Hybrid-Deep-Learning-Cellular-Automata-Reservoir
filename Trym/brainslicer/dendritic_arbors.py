@@ -1,248 +1,104 @@
 
-from brainslicer.neural_structure import NeuralStructure
-import numpy as ncp
-from .help_functions import remove_neg_values
+from .neural_structure import  NeuralStructureNode
+import numpy as np
+
 '''
     Axonal arbors
 '''
 
+class DynamicalAxonalTerminalMarkramEtal1998Node(NeuralStructureNode):
+    def __init__(self, parameters):
+        super().__init__(parameters)
 
-class DynamicalAxonalTerminalMarkramEtal1998(NeuralStructure):
-    interfacable = 0
+        population_size = self.parameters["population_size"] # ToDo: this one is 3d, maybe I should use a different name
 
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
+        # static states
+        resting_utilization_of_synaptic_efficacy_distribution = self.parameters["resting_utilization_of_synaptic_efficacy"]
+        absolute_synaptic_efficacy_distribution = self.parameters["absolute_synaptic_efficacy"]
+        time_constant_depression_distribution = self.parameters["time_constant_depression"]
+        time_constant_facilitation_distribution = self.parameters["time_constant_facilitation"]
+        
 
-        self.spike_matrix = None
-        self.state["spike_matrix"] = None
-        self.delta_t = self.parameters["time_step"]
+        self.static_state.update({
+            "resting_utilization_of_synaptic_efficacy": self.create_distribution_values(resting_utilization_of_synaptic_efficacy_distribution, population_size),
+            "absolute_synaptic_efficacy": self.create_distribution_values(absolute_synaptic_efficacy_distribution, population_size),
+            "time_constant_depression": self.create_distribution_values(time_constant_depression_distribution, population_size),
+            "time_constant_facilitation": self.create_distribution_values(time_constant_facilitation_distribution, population_size)
+        })
 
-        self.state["connected_components"] = []
+        # remove values 
+        
+        absolute_synaptic_efficacy = self.static_state["absolute_synaptic_efficacy"]
+        if self.parameters["synapse_type"] == "excitatory":
+            self.remove_negative_or_positive_values(absolute_synaptic_efficacy, absolute_synaptic_efficacy_distribution, "negative")
+        elif self.parameters["synapse_type"] == "inhibitory":
+            self.remove_negative_or_positive_values(absolute_synaptic_efficacy, absolute_synaptic_efficacy_distribution, "positive")
 
-    def interface(self, external_component):
-        # read variable should be a 2d or 3d array containing boolean values of spikes
-        self.external_component = external_component
-        # print(external_component.parameters.keys())
-        self.state["connected_components"].append(
-            external_component.parameters["ID"])
+        resting_utilization_of_synaptic_efficacy = self.static_state["resting_utilization_of_synaptic_efficacy"]
+        self.remove_negative_or_positive_values(resting_utilization_of_synaptic_efficacy, resting_utilization_of_synaptic_efficacy_distribution, "negative")
+        
 
-        external_component_read_variable = self.external_component.interfacable
-        external_component_read_variable_shape = external_component_read_variable.shape
-        #self.indexes = self.create_indexes(external_component_read_variable_shape)
-        self.state["indexes"] = self.create_indexes(
-            external_component_read_variable_shape)
+        time_constant_depression = self.static_state["time_constant_depression"]
+        self.remove_negative_or_positive_values(time_constant_depression, time_constant_depression_distribution, "negative")
+       
 
-        #self.spike_matrix = ncp.zeros(external_component_read_variable_shape)
-        self.state["spike_matrix"] = ncp.zeros(
-            external_component_read_variable_shape)
-
-        #self.population_size = self.spike_matrix.shape
-        self.state["population_size"] = self.state["spike_matrix"].shape
-
-        #self.time_since_last_spike = ncp.zeros(self.population_size)
-        self.state["time_since_last_spike"] = ncp.zeros(
-            self.state["population_size"])
-
-        resting_utilization_of_synaptic_efficacy_distribution = self.parameters[
-            "resting_utilization_of_synaptic_efficacy"]["distribution"]
-
-        if resting_utilization_of_synaptic_efficacy_distribution == "normal":
-
-            mean = self.parameters["resting_utilization_of_synaptic_efficacy"]["mean"]
-            SD = self.parameters["resting_utilization_of_synaptic_efficacy"]["SD"]
-            population_size = self.state["population_size"]
-
-            self.state["resting_utilization_of_synaptic_efficacy"] = ncp.random.normal(
-                mean, SD, population_size)
-
-            resting_utilization_of_synaptic_efficacy = self.state[
-                "resting_utilization_of_synaptic_efficacy"]
-
-            negative_values = resting_utilization_of_synaptic_efficacy <= 0
-            replacement_values = ncp.random.uniform(
-                mean - SD, mean + SD, population_size)
-            resting_utilization_of_synaptic_efficacy *= negative_values == 0
-            resting_utilization_of_synaptic_efficacy += replacement_values*negative_values
-
-        else:
-            print(
-                "only normal distribution implemented for resting_utilization_of_synaptic_efficacy_distribution")
-            sys.exit(0)
-
-        absolute_synaptic_efficacy_distribution = self.parameters[
-            "absolute_synaptic_efficacy"]["distribution"]
-
-        if resting_utilization_of_synaptic_efficacy_distribution == "normal":
-
-            mean = self.parameters["absolute_synaptic_efficacy"]["mean"]
-            SD = self.parameters["absolute_synaptic_efficacy"]["SD"]
-            population_size = self.state["population_size"]
-
-            self.state["weight_matrix"] = ncp.random.normal(
-                mean, SD, population_size)
-
-            synapse_type = self.parameters["synapse_type"]
-            weight_matrix = self.state["weight_matrix"]
+        time_constant_facilitation = self.static_state["time_constant_facilitation"]
+        self.remove_negative_or_positive_values(time_constant_facilitation, time_constant_facilitation_distribution, "negative")
 
 
-            if synapse_type == "excitatory":
-                # to do: find better solution for switching values
-                negative_values = weight_matrix <= 0
-                replacement_values = ncp.random.uniform(
-                    mean - mean*0.5, mean + mean*0.5, population_size)
-                weight_matrix *= negative_values == 0
-                weight_matrix += replacement_values*negative_values
-            elif synapse_type == "inhibitory":
-                positive_values = weight_matrix >= 0
-                replacement_values = ncp.random.uniform(
-                    mean + mean*0.5, mean - mean*0.5, population_size)
-                weight_matrix *= positive_values == 0
-                weight_matrix += replacement_values*positive_values
+        # current states with next state
+        self.current_state.update({
+                "utilization_of_synaptic_efficacy": np.ones(population_size) + resting_utilization_of_synaptic_efficacy,
+                "neurotransmitter_reserve": np.ones(population_size),
+                "synaptic_response": np.zeros(population_size)
+        })
+        self.copy_next_state_from_current_state()
 
-        else:
-            print(
-                "Absolute synaptic efficacy distributions other than normal has not been implemented")
-            sys.exit(0)
+        # current states without next state
+        self.current_state.update({
+            "spike_source": np.zeros(population_size),
+            "time_since_last_spike":np.zeros(population_size)
+        })
 
-        time_constant_depression_distribution = self.parameters[
-            "time_constant_depression"]["distribution"]
-
-        if time_constant_depression_distribution == "normal":
-
-            mean = self.parameters["time_constant_depression"]["mean"]
-            SD = self.parameters["time_constant_depression"]["SD"]
-            population_size = self.state["population_size"]
-
-            self.state["tau_recovery"] = ncp.random.normal(
-                mean, SD, population_size)
-
-            tau_recovery = self.state["tau_recovery"]
-
-            negative_values = tau_recovery <= 0
-            replacement_values = ncp.random.uniform(
-                mean - SD, mean + SD, population_size)
-            tau_recovery *= negative_values == 0
-            tau_recovery += replacement_values*negative_values
-
-        else:
-            print("Only normal distribution implemented for time_constant_depression")
-
-        if self.parameters["time_constant_facilitation"]["distribution"] == "normal":
-
-            mean = self.parameters["time_constant_facilitation"]["mean"]
-            SD = self.parameters["time_constant_facilitation"]["SD"]
-            population_size = self.state["population_size"]
-
-            self.state["tau_facil"] = ncp.random.normal(
-                mean, SD, population_size)
-
-            tau_facil = self.state["tau_facil"]
-
-            negative_values = tau_facil <= 0
-            replacement_values = ncp.random.uniform(
-                mean - SD, mean + SD, population_size)
-            tau_facil *= negative_values == 0
-            tau_facil += replacement_values*negative_values
-
-        else:
-            print("Only normal distribution implemented for time_constant_depression")
-
-        population_size = self.state["population_size"]
-        resting_utilization_of_synaptic_efficacy = self.state[
-            "resting_utilization_of_synaptic_efficacy"]
-
-        self.state["current_neurotransmitter_reserve"] = ncp.ones(
-            population_size)  # R
-        self.state["new_neurotransmitter_reserve"] = ncp.ones(population_size)
-
-        self.state["current_utilization_of_synaptic_efficacy"] = ncp.ones(
-            population_size) + resting_utilization_of_synaptic_efficacy
-        self.state["new_utilization_of_synaptic_efficacy"] = ncp.ones(
-            population_size)
-
-        self.state["current_synaptic_response"] = ncp.zeros(population_size)
-        self.state["new_synaptic_response"] = ncp.zeros(population_size)
-
-        tau_recovery = self.state["tau_recovery"]
-        tau_facil = self.state["tau_facil"]
-
-        if ncp.any(tau_recovery <= 0) or ncp.any(tau_facil <= 0) or ncp.any(resting_utilization_of_synaptic_efficacy <= 0):
-            print("unsuccefull at removing negative values")
-            sys.exit(0)
-
-        if synapse_type == "inhibitory" and ncp.any(weight_matrix >= 0):
-            print(
-                "unsucesfull at removing positive values from inhibitory synapse weights")
-            sys.exit(0)
-        elif synapse_type == "excitatory" and ncp.any(weight_matrix <= 0):
-            print(
-                "unsucsefull at removing negative values from excitatory synapse weights")
-            sys.exit(0)
-
-        self.interfacable = self.state["new_synaptic_response"]
-
-    def set_state(self, state):
-        self.state = state
-        self.interfacable = self.state["new_synaptic_response"]
-
-    def compute_new_values(self):
-        indexes = self.state["indexes"]
-        current_utilization_of_synaptic_efficacy = self.state[
-            "current_utilization_of_synaptic_efficacy"]
-        new_utilization_of_synaptic_efficacy = self.state["new_utilization_of_synaptic_efficacy"]
-        resting_utilization_of_synaptic_efficacy = self.state[
-            "resting_utilization_of_synaptic_efficacy"]
-        time_since_last_spike = self.state["time_since_last_spike"]
-        tau_facil = self.state["tau_facil"]
-
-        new_utilization_of_synaptic_efficacy[indexes] = current_utilization_of_synaptic_efficacy * ncp.exp(
-            (-time_since_last_spike) / tau_facil) + resting_utilization_of_synaptic_efficacy*(1 - current_utilization_of_synaptic_efficacy * ncp.exp((-time_since_last_spike) / tau_facil))
-
-        current_neurotransmitter_reserve = self.state["current_neurotransmitter_reserve"]
-        new_neurotransmitter_reserve = self.state["new_neurotransmitter_reserve"]
-        tau_recovery = self.state["tau_recovery"]
-
-        new_neurotransmitter_reserve[indexes] = current_neurotransmitter_reserve * (
-            1 - new_utilization_of_synaptic_efficacy)*ncp.exp(-time_since_last_spike / tau_recovery) + 1 - ncp.exp(-time_since_last_spike / tau_recovery)
-
+    def compute_next(self):
         time_step = self.parameters["time_step"]
-        spike_matrix = self.state["spike_matrix"]
-        new_synaptic_response = self.state["new_synaptic_response"]
-        weight_matrix = self.state["weight_matrix"]
 
-        time_since_last_spike += time_step
-        time_since_last_spike *= spike_matrix == 0
+        resting_utilization_of_synaptic_efficacy = self.static_state["resting_utilization_of_synaptic_efficacy"]
+        time_constant_facilitation = self.static_state["time_constant_facilitation"]
+        time_constant_depression = self.static_state["time_constant_depression"]
+        absolute_synaptic_efficacy = self.static_state["absolute_synaptic_efficacy"]
 
-        new_synaptic_response[indexes] = weight_matrix * \
-            new_utilization_of_synaptic_efficacy * new_neurotransmitter_reserve*spike_matrix
+        current_utilization_of_synaptic_efficacy = self.current_state["utilization_of_synaptic_efficacy"]
+        current_neurotransmitter_reserve = self.current_state["neurotransmitter_reserve"]
+        time_since_last_spike = self.current_state["time_since_last_spike"]
+        spike_source = self.current_state["spike_source"]
 
-        no_spike_mask = spike_matrix == 0
-        new_utilization_of_synaptic_efficacy *= spike_matrix
-        new_utilization_of_synaptic_efficacy += current_utilization_of_synaptic_efficacy*no_spike_mask
+        next_utilization_of_synaptic_efficacy = self.next_state["utilization_of_synaptic_efficacy"]
+        next_neurotransmitter_reserve = self.next_state["neurotransmitter_reserve"]
+        next_synaptic_response = self.next_state["synaptic_response"]
 
-        new_neurotransmitter_reserve *= spike_matrix
-        new_neurotransmitter_reserve += current_neurotransmitter_reserve*no_spike_mask
-        # print(ncp.amax(self.interfacable))
-        # print("new")
-        # return 1
 
-    def update_current_values(self):
-        indexes = self.state["indexes"]
-        current_synaptic_response = self.state["current_synaptic_response"]
-        new_synaptic_response = self.state["new_synaptic_response"]
-        current_utilization_of_synaptic_efficacy = self.state[
-            "current_utilization_of_synaptic_efficacy"]
-        new_utilization_of_synaptic_efficacy = self.state["new_utilization_of_synaptic_efficacy"]
-        current_neurotransmitter_reserve = self.state["current_neurotransmitter_reserve"]
-        new_neurotransmitter_reserve = self.state["new_neurotransmitter_reserve"]
-        spike_matrix = self.state["spike_matrix"]
+        utilization_of_synaptic_efficacy = current_utilization_of_synaptic_efficacy * np.exp((-time_since_last_spike) / time_constant_facilitation) + resting_utilization_of_synaptic_efficacy*(1 - current_utilization_of_synaptic_efficacy * np.exp((-time_since_last_spike) / time_constant_facilitation))
+        np.copyto(next_utilization_of_synaptic_efficacy, utilization_of_synaptic_efficacy)
 
-        current_synaptic_response[indexes] = new_synaptic_response
+        neurotransmitter_reserve = current_neurotransmitter_reserve * (1 - next_utilization_of_synaptic_efficacy) * np.exp(-time_since_last_spike / time_constant_depression) + 1 - np.exp(-time_since_last_spike / time_constant_depression)
+        np.copyto(next_neurotransmitter_reserve, neurotransmitter_reserve)
 
-        current_utilization_of_synaptic_efficacy[indexes] = new_utilization_of_synaptic_efficacy
+        no_spike_mask = spike_source == 0
 
-        current_neurotransmitter_reserve[indexes] = new_neurotransmitter_reserve
+        time_since_last_spike += time_step 
+        time_since_last_spike *= no_spike_mask
+        #To avoid overflow
+        time_since_last_spike[time_since_last_spike>1000000] = 1000000 # ToDo: choose better value
 
-        spike_matrix[indexes] = self.external_component.interfacable
-        "update"
-        # return 2
+        synaptic_response = absolute_synaptic_efficacy * next_utilization_of_synaptic_efficacy * next_neurotransmitter_reserve * spike_source
+        np.copyto(next_synaptic_response, synaptic_response)
+
+        next_utilization_of_synaptic_efficacy *= spike_source 
+        next_utilization_of_synaptic_efficacy += current_neurotransmitter_reserve * no_spike_mask 
+
+        next_neurotransmitter_reserve *= spike_source 
+        next_neurotransmitter_reserve += current_neurotransmitter_reserve * no_spike_mask 
+
+
+

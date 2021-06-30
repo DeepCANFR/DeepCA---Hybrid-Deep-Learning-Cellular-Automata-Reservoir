@@ -1,6 +1,6 @@
 # print("update")#print("new")# return 2import numpy as np
 
-import cupy as cp
+#import cupy as cp
 
 import numpy as np
 
@@ -24,27 +24,24 @@ from .membrane_equations import IntegrateAndFireNeuronMembraneFunction, CircuitE
 from .spike_generators import PoissonSpikeGenerator
 
 from .support_classes import InterfacableArray
-from .neural_structure import NeuralStructure
 
-from .somas import BaseIntegrateAndFireSoma, CircuitEquationIntegrateAndFireSoma, IzhikevichSoma
+from .neural_structure import  NeuralStructureNode
 
-from .dendritic_arbors import DynamicalAxonalTerminalMarkramEtal1998
+from .somas import IzhikevichNode, CircuitEquationNode
 
-from .dendritic_spines import DendriticSpineMaas
+from .dendritic_arbors import DynamicalAxonalTerminalMarkramEtal1998Node
 
-from .arborizers import DendriticArbor
+from .dendritic_spines import DendriticSpineMaasNode
 
-from .delay_lines import DelayLine
+from .arborizers import  ArborizerNode
 
-from .neurons import NeuronsFullyDistributed, InputNeurons, NeuronsLocal, InputNeuronsLocal
-
-from .inputs import InputsDistributeSingleSpike
+from .delay_lines import  DelayLineNode
 
 from .readouts import ReadoutPDelta
 
-from .reconstructors import Network
-
 from .help_functions import UniqueIdDictCreator
+
+from .graphs import DistributedGraph
 
 
 VERSION = "0.0.1"
@@ -68,40 +65,30 @@ class Brainslicer():
 
         self.PoissonSpikeGenerator = PoissonSpikeGenerator
 
-        self.InterfacableArray = InterfacableArray
+        self.NeuralStructureNode = NeuralStructureNode
 
-        self.Component = NeuralStructure
+        self.DynamicalAxonalTerminalMarkramEtal1998Node = DynamicalAxonalTerminalMarkramEtal1998Node
 
-        self.BaseIntegrateAndFireSoma = BaseIntegrateAndFireSoma
+        self.DendriticSpineMaasNode = DendriticSpineMaasNode
 
-        self.CircuitEquationIntegrateAndFireSoma = CircuitEquationIntegrateAndFireSoma
-
-        self.IzhikevichSoma = IzhikevichSoma
-
-        self.DynamicalAxonalTerminalMarkramEtal1998 = DynamicalAxonalTerminalMarkramEtal1998
-
-        self.DendriticSpineMaas = DendriticSpineMaas
-
-        self.DendriticArbor = DendriticArbor
-
-        self.DelayLine = DelayLine
-
-        self.NeuronsFullyDistributed = NeuronsFullyDistributed
-
-        self.InputNeurons = InputNeurons
-
-        self.InputsDistributeSingleSpike = InputsDistributeSingleSpike
+        self.ArborizerNode = ArborizerNode
+        
+        self.DelayLineNode = DelayLineNode
 
         self.ReadoutPDelta = ReadoutPDelta
 
-        self.Network = Network
-
         self.UniqueIdDictCreator = UniqueIdDictCreator
+
+        self.DistributedGraph = DistributedGraph
+
+        self.IzhikevichNode = IzhikevichNode
+
+        self.CircuitEquationNode = CircuitEquationNode
 
 
 
 
 if __name__ == "__main__":
-
+    # todo: add list of names not to be used when creating new classes and genomes
     print(VERSION)
 

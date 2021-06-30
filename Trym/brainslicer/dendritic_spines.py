@@ -1,87 +1,54 @@
-import numpy as ncp
-from .help_functions import remove_neg_values
-from .neural_structure import NeuralStructure
+import numpy as np
+from .neural_structure import NeuralStructureNode
 '''
     Dendritic spines
 '''
+class DendriticSpineMaasNode(NeuralStructureNode):
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        population_size = self.parameters["population_size"]
 
+        # current with next
+        self.current_state.update({
+            "synaptic_output": np.zeros(population_size),
+        })
+        self.copy_next_state_from_current_state()
 
-class DendriticSpineMaas(NeuralStructure):
-    interfacable = 0
+        self.current_state.update({
+            "synaptic_input": np.zeros(population_size),
+            "time_since_last_spike":np.zeros(population_size) + 1000,
+            "last_input_since_spike":np.zeros(population_size)
+        })
 
-    def __init__(self, parameter_dict):
-        super().__init__(parameter_dict)
-        self.dt = self.parameters["time_step"]
-        self.time_constant = self.parameters["time_constant"]
-
-    def interface(self, external_component):
-        self.external_component = external_component
-        self.state["connected_components"].append(
-            external_component.parameters["ID"])
-
-        external_component_read_variable = self.external_component.interfacable
-        external_component_read_variable_shape = external_component_read_variable.shape
-        self.state["indexes"] = self.create_indexes(
-            external_component_read_variable_shape)
-
-        self.state["current_synaptic_input"] = ncp.zeros(
-            external_component_read_variable_shape)
-        current_synaptic_input = self.state["current_synaptic_input"]
-
-        self.state["population_size"] = current_synaptic_input.shape
-        population_size = self.state["population_size"]
-        self.state["last_input_since_spike"] = ncp.zeros(population_size)
-        self.state["new_synaptic_output"] = ncp.zeros(population_size)
-        self.state["current_synaptic_output"] = ncp.zeros(population_size)
-
-        self.state["time_since_last_spike"] = ncp.ones(population_size) + 1000
-
-        self.interfacable = self.state["new_synaptic_output"]
-
-    def set_state(self, state):
-        self.state = state
-        self.interfacable = self.state["new_synaptic_output"]
-
-    def compute_new_values(self):
-        indexes = self.state["indexes"]
+        time_constant_distribution = self.parameters["time_constant"]
+        self.static_state.update({
+            "time_constant": self.create_distribution_values(time_constant_distribution, population_size)
+        })
+    
+    def compute_next(self):
         time_step = self.parameters["time_step"]
-        time_since_last_spike = self.state["time_since_last_spike"]
-        new_synaptic_output = self.state["new_synaptic_output"]
-        current_synaptic_input = self.state["current_synaptic_input"]
-        last_input_since_spike = self.state["last_input_since_spike"]
-        time_constant = self.parameters["time_constant"]
+        synaptic_input = self.current_state["synaptic_input"]
+        time_since_last_spike = self.current_state["time_since_last_spike"]
+        last_input_since_spike = self.current_state["last_input_since_spike"]
+        next_synaptic_output = self.next_state["synaptic_output"]
 
-        # compute new time since last spiked first to decay current value
+        time_constant = self.static_state["time_constant"]
+
+
         time_since_last_spike += time_step
 
-        new_synaptic_output[indexes] = last_input_since_spike * \
-            ncp.exp(-time_since_last_spike / time_constant)
-        new_synaptic_output += current_synaptic_input
+        np.copyto(
+            next_synaptic_output, 
+            last_input_since_spike * np.exp(-time_since_last_spike/ time_constant)
+        )
+        next_synaptic_output += synaptic_input
 
-        current_input_mask = current_synaptic_input == 0
+
+        current_input_mask = synaptic_input == 0
         last_input_since_spike *= current_input_mask
-        last_input_since_spike += new_synaptic_output * \
-            (current_input_mask == 0)
+        last_input_since_spike += next_synaptic_output * (current_input_mask == 0)
 
         time_since_last_spike *= current_input_mask
-        # self.cap_array(self.time_since_last_spike,10000)
-        # print(ncp.amax(self.interfacable))
-        # return "max dendritic spine", ncp.amax(current_synaptic_input), ncp.amax(new_synaptic_output)
-        # print("new")
-        # return 1
+        # to avoid overflow for positions that never receive input
+        time_since_last_spike[time_since_last_spike>100000] = 100000  # To do: choose a good upper limit
 
-    def update_current_values(self):
-        current_synaptic_output = self.state["current_synaptic_output"]
-        current_synaptic_input = self.state["current_synaptic_input"]
-        new_synaptic_output = self.state["new_synaptic_output"]
-        indexes = self.state["indexes"]
-
-        current_synaptic_output[indexes] = new_synaptic_output
-        current_synaptic_input[indexes] = self.external_component.interfacable
-        # print("update")
-        # return 2
-
-    def cap_array(self, array, upper_cap):
-        below_upper_limit = array < upper_cap
-        array *= below_upper_limit
-        array += (below_upper_limit == 0)*upper_cap

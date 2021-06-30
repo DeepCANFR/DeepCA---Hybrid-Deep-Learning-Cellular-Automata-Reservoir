@@ -46,7 +46,7 @@ class InterfacableArray(object):
 
         self.external_components.append(external_component)
 
-    def update(self):
+    async def update(self):
 
         for index, external_component in enumerate(self.external_components):
             component_index = self.external_components_indexes[index]

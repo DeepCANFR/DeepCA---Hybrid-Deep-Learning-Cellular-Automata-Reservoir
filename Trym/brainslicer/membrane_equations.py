@@ -20,35 +20,40 @@ class IntegrateAndFireNeuronMembraneFunction(object):
 
 
 class CircuitEquation(object):
-    def __init__(self, input_resistance, time_constant, summed_inputs, constant_input=0):
+    def __init__(self, static_state, current_state):
+        self.static_state = static_state 
+        self.current_state = current_state
 
-        self.input_resistance = input_resistance
-        self.time_constant = time_constant
-        self.summed_inputs = summed_inputs
-
-        self.constant_input = constant_input
 
     def __call__(self, V, t):
+        input_resistance = self.static_state["input_resistance"]
+        summed_inputs = self.current_state["summed_inputs"]
+        background_current = self.static_state["background_current"]
+        time_constant = self.static_state["time_constant"]
 
-        delta_V = (self.input_resistance * (self.summed_inputs +
-                   self.constant_input) - V) / self.time_constant
+        delta_V = (input_resistance * (summed_inputs +
+                   background_current) - V) / time_constant
 
         return delta_V
 
 
 class IzhivechikEquation(object):
-    def __init__(self, a, b, summed_inputs, population_size):
-        self.a = a
-        self.b = b
-
-        self.summed_inputs = summed_inputs
-        self.population_size = population_size
+    def __init__(self, static_state, current_state, parameters):
+        self.static_state = static_state
+        self.current_state = current_state 
+        self.parameters = parameters
 
     def __call__(self, v_u, t=0):
+        a = self.static_state["membrane_recovery"]
+        b = self.static_state["resting_potential"]
+
+        summed_inputs = self.current_state["summed_inputs"]
+        population_size = self.parameters["population_size"]
+
 
         delta_v_u = ncp.zeros(
-            (self.population_size[0], self.population_size[1], 2))
+            (population_size[0], population_size[1], 2))
         delta_v_u[:, :, 0] = 0.04*v_u[:, :, 0]**2 + 5 * \
-            v_u[:, :, 0] + 140 - v_u[:, :, 1] + self.summed_inputs
-        delta_v_u[:, :, 1] = self.a * (self.b * v_u[:, :, 0] - v_u[:, :, 1])
+            v_u[:, :, 0] + 140 - v_u[:, :, 1] + summed_inputs
+        delta_v_u[:, :, 1] = a * (b * v_u[:, :, 0] - v_u[:, :, 1])
         return delta_v_u

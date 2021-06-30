@@ -1,16 +1,266 @@
 import numpy as ncp
-from .neural_structure import NeuralStructure
+from .neural_structure import NeuralStructureNode
 from .support_classes import InterfacableArray
 from .membrane_equations import IntegrateAndFireNeuronMembraneFunction
 from .differential_equation_solvers import RungeKutta2
 from .membrane_equations import CircuitEquation, IzhivechikEquation
-from .help_functions import remove_neg_values
-
+import numpy as np
 
 '''
 Somas
 '''
+class BaseIntegrateAndFireSomaNode(NeuralStructureNode):
+    def __init__(self, parameters):
+        super().__init__(parameters)
 
+
+    def reset_spiked_neurons(self):
+        next_spiked_neurons = self.next_state["spiked_neurons"]
+        time_since_last_spike = self.current_state["time_since_last_spike"]
+        new_somatic_voltages = self.next_state["v"]
+        reset_voltage = self.static_state["reset_voltage"]
+
+        non_spike_mask = next_spiked_neurons == 0
+        time_since_last_spike *= non_spike_mask
+        new_somatic_voltages *= non_spike_mask
+        new_somatic_voltages += next_spiked_neurons * reset_voltage
+
+    def kill_dead_values(self):
+        next_v = self.next_state["v"]
+        dead_cells = self.static_state["dead_cells"]
+        next_spiked_neurons = self.next_state["spiked_neurons"]
+        # destroy values in dead cells
+        next_v *= dead_cells
+        next_spiked_neurons *= dead_cells
+
+    def set_refractory_values(self):
+        refractory_period = self.static_state["refractory_period"]
+        reset_voltage = self.static_state["reset_voltage"]
+        
+        time_since_last_spike = self.current_state["time_since_last_spike"]
+        
+        nex_somatic_voltages = self.next_state["v"]
+        
+        # set somatic voltages to the reset value if within refractory period
+        nex_somatic_voltages *= time_since_last_spike > refractory_period
+        nex_somatic_voltages += (time_since_last_spike <= refractory_period) * reset_voltage
+
+class CircuitEquationNode(BaseIntegrateAndFireSomaNode):
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        population_size = self.parameters["population_size"]
+
+        reset_voltage_distribution = self.parameters["reset_voltage"]
+        membrane_time_constant_distribution = self.parameters["time_constant"]
+        input_resistance_distribution = self.parameters["input_resistance"]
+        threshold_distribution = self.parameters["thresholds"]
+        background_current_distribution = self.parameters["background_current"]
+        refractory_period_distribution = self.parameters["refractory_period"]
+
+        self.static_state.update({
+            "reset_voltage": self.create_distribution_values(reset_voltage_distribution, population_size),
+            "time_constant": self.create_distribution_values(membrane_time_constant_distribution, population_size),
+            "input_resistance": self.create_distribution_values(input_resistance_distribution, population_size),
+            "thresholds": self.create_distribution_values(threshold_distribution, population_size),
+            "background_current": self.create_distribution_values(background_current_distribution, population_size),
+            "refractory_period": self.create_distribution_values(refractory_period_distribution, population_size),
+            "dead_cells":1 #ToDo: implement dead cells
+        })
+
+        # ToDo: Decide if I need to remove positive or negative values
+    
+
+        self.current_state.update({
+            "v":np.zeros(population_size),
+            "summed_inputs": np.zeros(population_size),
+            "time_since_last_spike": np.zeros(population_size),
+            "spiked_neurons": np.zeros(population_size)
+        })
+        self.copy_next_state_from_current_state()
+
+        for input in parameters["inputs"]:
+            self.current_state.update({
+                input:np.zeros(population_size)
+            })
+
+        self.set_membrane_function()
+    
+    def set_membrane_function(self):
+        # ToDo: setting the membrane equation the way it is done now removes the ability to load saves states into 
+        # the equation, need to find some way of fixing this. Maybe just give labels and a link to the static state?
+        time_step = self.parameters["time_step"]
+
+        membrane_function = CircuitEquation(self.static_state, self.current_state)
+
+        self.membrane_solver = RungeKutta2(
+                                        membrane_function, 
+                                        time_step
+                                        )
+    def compute_next(self):
+        time_step = self.parameters["time_step"]
+        time_since_last_spike = self.current_state["time_since_last_spike"]
+        current_v = self.current_state["v"]
+        next_v = self.next_state["v"]
+        thresholds = self.static_state["thresholds"]
+        dead_cells = self.static_state["dead_cells"]
+        next_spiked_neurons = self.next_state["spiked_neurons"]
+        next_summed_inputs = self.next_state["summed_inputs"]
+
+        next_summed_inputs *= 0
+        for key in self.parameters["inputs"]:
+            next_summed_inputs += self.current_state[key]
+
+        time_since_last_spike += time_step 
+        time_since_last_spike[time_since_last_spike > 1000000] = 1000000 # ToDo: Choose value smartly
+
+        next_v += self.membrane_solver.advance(current_v, t=0)
+        next_v *= dead_cells
+
+        spiked_neurons = next_v > thresholds
+
+        np.copyto(next_spiked_neurons, spiked_neurons)
+
+        self.reset_spiked_neurons()
+
+        
+
+    
+        
+class IzhikevichNode(BaseIntegrateAndFireSomaNode):
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        population_size = self.parameters["population_size"]
+
+        # current variables with next state
+        self.current_state.update(
+            {
+            "u": np.zeros(population_size),
+            "v": np.ones(population_size),
+            "spiked_neurons": np.zeros(population_size)
+            }
+        )
+        self.copy_next_state_from_current_state()
+
+        # current variables without next state
+        self.current_state.update(
+            {
+                "summed_inputs":np.zeros(population_size),
+                "time_since_last_spike":np.zeros(population_size)
+            }
+        )
+        # The number of other nodes somas receive inputs from can vary so this is initiated in a for loop
+        for input in parameters["inputs"]:
+            self.current_state.update(
+            {
+                input:np.zeros(population_size)
+            }
+        )
+
+        # static state variables
+        self.static_state.update({
+            "dead_cells" : 1, #ToDo: implement dead cells
+            "thresholds" : self.parameters["threshold"], #ToDO: make distribution
+            "refractory_period": self.parameters["refractory_period"] #ToDo: ditto
+        })
+
+        if "dependent" in parameters["resting_potential"] and "dependency" in parameters["membrane_recovery"]:
+            resting_potential, membrane_recovery = self.create_dependent_distribution_values(self.parameters["reset_voltage"], self.parameters["reset_recovery_variable"], population_size)
+        else:
+            self.static_state.update(
+                {
+                    "reset_voltage": self.create_distribution_values(self.parameters["reset_voltage"],population_size),
+                    "reset_recovery_variable": self.create_distribution_values(self.parameters["reset_recovery_variable"], population_size)
+                }
+            )
+        if "dependent" in parameters["membrane_recovery"] and "dependency" in parameters["resting_potential"]:
+            membrane_recovery, resting_potential = self.create_dependent_distribution_values(parameters["membrane_recovery"], parameters["membrane_recovery"], population_size)
+            self.static_state.update({
+                "membrane_recovery": membrane_recovery,
+                "resting_potential": resting_potential
+            })
+        else:
+            self.static_state.update({
+                "membrane_recovery": self.create_distribution_values(parameters["membrane_recovery"], population_size),
+                "resting_potential": self.create_distribution_values(parameters["resting_potential"], population_size)
+            })
+
+        self.current_state["v"] *= self.static_state["reset_voltage"]
+        self.next_state["v"] *= 0
+        self.next_state["v"] += 1
+        self.next_state["v"] *= self.static_state["reset_voltage"]
+
+        self.set_membrane_function()
+
+    def set_membrane_function(self):
+        time_step = self.parameters["time_step"]
+
+        membrane_function = IzhivechikEquation(
+                                   self.static_state,
+                                   self.current_state,
+                                   self.parameters
+                                    )
+                                    
+        self.membrane_solver = RungeKutta2(
+                                    membrane_function, 
+                                    time_step
+                                    )
+        
+    def compute_next(self):
+        
+        time_step = self.parameters["time_step"]
+        upper_limit = self.parameters["temporal_upper_limit"]
+        
+        threshold = self.static_state["thresholds"]
+        dead_cells_location = self.static_state["dead_cells"]
+        reset_recovery_variable = self.static_state["reset_recovery_variable"]
+
+        current_v = self.current_state["v"]
+        current_u = self.current_state["u"]
+        time_since_last_spike = self.current_state["time_since_last_spike"]
+        summed_inputs = self.current_state["summed_inputs"]
+        
+        next_v = self.next_state["v"]
+        next_u = self.next_state["u"]
+        next_spiked_neurons = self.next_state["spiked_neurons"]
+
+        summed_inputs*=0
+        summed_inputs += self.parameters["background_current"]
+        
+        for input in self.parameters["inputs"]:
+            summed_inputs += self.current_state[input]
+        
+        time_since_last_spike += time_step
+        
+        v_u = ncp.concatenate(
+                (current_v[:, :, ncp.newaxis], current_u[:, :, ncp.newaxis]), 
+                axis=2)
+
+        delta_v_u = self.membrane_solver.advance(v_u, t=0)
+
+        next_v += delta_v_u[:, :, 0]
+        next_u += delta_v_u[:, :, 1]
+
+        # set somatic values for neurons that have fired within the refractory period to zero
+        #self.new_somatic_voltages *= self.time_since_last_spike > self.refractory_period
+        self.set_refractory_values()
+        next_spiked_neurons[:, :] = next_v > threshold
+        next_u += next_spiked_neurons * reset_recovery_variable
+
+        self.reset_spiked_neurons()
+
+        # destroy values in dead cells
+        next_v *= dead_cells_location
+        next_spiked_neurons *= dead_cells_location
+
+        # set this to avoid overlflow
+        time_since_last_spike[time_since_last_spike > 10000000] = 10000000 #ToDo: fix value
+
+        next_u[:, :] = self.cap_array(next_u, upper_limit)
+        
+        #print(self.connected_distributed_nodes)
+       
+
+'''
 class BaseIntegrateAndFireSoma(NeuralStructure):
     interfacable = 0
     current_somatic_voltages = 0
@@ -92,7 +342,7 @@ class BaseIntegrateAndFireSoma(NeuralStructure):
     def compute_new_values(self):
         raise NotImplementedError
         sys.exit(1)
-    def update_current_values(self):
+    async def update_current_values(self):
         summed_inputs = self.state["summed_inputs"]
         current_somatic_voltages = self.state["current_somatic_voltages"]
         current_spiked_neurons = self.state["current_spiked_neurons"]
@@ -257,9 +507,7 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         self.membrane_solver = RungeKutta2(
             membrane_function, self.parameters["time_step"])
     def compute_new_values(self):
-        '''
-            
-        '''
+
         time_step = self.parameters["time_step"]
         upper_limit = self.parameters["temporal_upper_limit"]
         time_since_last_spike = self.state["time_since_last_spike"]
@@ -268,6 +516,7 @@ class CircuitEquationIntegrateAndFireSoma(BaseIntegrateAndFireSoma):
         new_spiked_neurons = self.state["new_spiked_neurons"]
         threshold = self.state["threshold"]
         dead_cells_location = self.state["dead_cells_location"]
+        
         time_since_last_spike += time_step
         new_somatic_voltages += self.membrane_solver.advance(
             current_somatic_voltages, t=0)
@@ -450,3 +699,4 @@ class IzhikevichSoma(BaseIntegrateAndFireSoma):
         current_u[:, :] = new_u[:, :]
         # print("update")
         # return 2
+'''
