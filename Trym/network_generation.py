@@ -4,12 +4,12 @@ import pickle
 import brainslicer as rm
 import matplotlib.pyplot as plt
 #import tensorflow as tf
-from scipy import stats
+#from scipy import stats
 import dask
 from dask.distributed import Client, LocalCluster
 #from dask.distributed import performance_report
 from collections import OrderedDict
-
+from dask_jobqueue import SLURMCluster
 import sys
 
 import numpy as np
@@ -563,9 +563,15 @@ EI_input_3_parameter_dict["dendritic_spines"] =  UniqueIdDictCreator.create_uniq
 
 
 if __name__ == '__main__':
+    # cluster = SLURMCluster(cores=32,
+    #                        processes=4,
+    #                        memory="1024GB",
+    #                        project="dashproject",
+    #                        walltime="01:00:00",
+    #                        queue="defq")
 
-
-    with Client(n_workers = 6) as client:
+    #with Client(cluster) as client:
+    with Client(n_workers = 32) as client:
 
         '''
         Build neuron

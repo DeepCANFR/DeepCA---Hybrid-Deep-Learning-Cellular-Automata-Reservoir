@@ -28,8 +28,9 @@ class ArborizerNode(Node):
         
         # next states without current states
         nr_of_connections = len(connections)
-        connection_array_shape = np.concatenate((population_size, np.array([nr_of_connections])))
-        connection_array_shape = connection_array_shape.astype(np.int64)
+        connection_array_shape = list(population_size)
+        connection_array_shape.append(nr_of_connections)
+        connection_array_shape = tuple([int(i) for i in connection_array_shape])
 
         self.next_state.update({
             "connection_array": np.zeros(connection_array_shape)
@@ -85,6 +86,7 @@ class ArborizerNode(Node):
         killing connections between the two layers
         '''
         connections = self.parameters["connection_relative_position"]
+        connections = np.array(connections)
         population_size = self.parameters["population_size"]
         connection_kill_mask = self.static_state["connection_kill_mask"]
 

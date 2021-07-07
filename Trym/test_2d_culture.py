@@ -281,6 +281,7 @@ if __name__ == "__main__":
         
     }
 
+    neighbours_1 = [(1,-1),(-1,-1),(0,-1),(2,-2)]
     I_axonal_spine_genome = {
         "identifier":"axonal_spine",
         "parameters":{
@@ -342,7 +343,7 @@ if __name__ == "__main__":
 
     IE_process_2_genome = bs.copy_graph_genome(IE_process_1_genome, "IE_process_2")
     
-    neighbours_2 = [(1,2),(0,2),(-1,2),(-2,2)]
+    neighbours_2 = [(1,-2),(0,-2),(-1,-2),(-2,-2)]
     IE_process_2_genome["nodes"]["arborizer"]["parameters"]["connection_relative_position"] = neighbours_2
 
 
@@ -410,7 +411,7 @@ if __name__ == "__main__":
             ]
         ]
     }
-    with Client(n_workers = 1) as client:
+    with Client(n_workers = 30) as client:
         graph = bs.DistributedGraph(client, {
             "IzhikevichNode":bs.IzhikevichNode, 
             "DelayLineNode":bs.DelayLineNode, 
@@ -432,4 +433,4 @@ if __name__ == "__main__":
                 t_last = time.time()
         print("Total time used: ",time.time() - t0)
 
-        #graph.save_memories("test_2d_culture_2_neuron_types")
+        graph.save_memories("test_2d_culture_3_neuron_types")

@@ -31,6 +31,7 @@ class DistributedGraph:
             self.nodes[identifier] = self.nodes[identifier].result()
 
     def connect_nodes(self, graph_genome = ""):
+        print(self.nodes.keys())
         if graph_genome == "":
             graph_genome = self.graph_genome
         futures = []

@@ -42,8 +42,13 @@ class DelayLineNode(Node):
             print("delay / time_step produced non integer number. This will result in inaccurate delay time. Please choose different time-step or delay")
             sys.exit(0)
         else:
-            delay_line_shape = np.concatenate((np.array([delay_in_time_steps]), np.array(population_size)))
-            delay_line_shape = delay_line_shape.astype(np.int64)
+            delay_line_shape = [delay_in_time_steps]
+            print(delay_line_shape)
+            population_size_list = list(population_size)
+            delay_line_shape = delay_line_shape + population_size_list
+            print(delay_line_shape)
+            delay_line_shape = tuple([int(i) for i in delay_line_shape])
+            print(type(delay_line_shape))
             self.current_state.update({
                                 "delay_line":np.zeros(delay_line_shape),
                                 

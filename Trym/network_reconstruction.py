@@ -1,7 +1,7 @@
 import brainslicer as rm
 import matplotlib.pyplot as plt
 #import tensorflow as tf
-from scipy import stats
+#from scipy import stats
 import dask
 from dask.distributed import Client, LocalCluster
 #from dask.distributed import performance_report
@@ -17,7 +17,13 @@ import pickle
 import time
 
 if __name__ == '__main__':
-  
+    # cluster = SLURMCluster(cores=32,
+    #                    processes=4,
+    #                    memory="1024GB",
+    #                    project="dashproject",
+    #                    walltime="01:00:00",
+    #                    queue="defq")
+
 
     spike_trains_base = ncp.load("spike_trains_base.npy")
     spike_trains_jittered = ncp.load("spike_trains_jittered.npy")

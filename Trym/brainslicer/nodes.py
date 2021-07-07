@@ -6,7 +6,7 @@ import time
 
 class Node:
     def __init__ (self, parameters):
-        time.sleep(1)
+        time.sleep(5)
         #states must be numpy/cupy arrays
         self.current_state = {} # The current state is used to compute the next state
         self.next_state = {} # next state is the future state of the computations the node performs
@@ -98,6 +98,7 @@ class Node:
             
             np.copyto(internal_value, external_value)
             #print("\n\n\n", internal_value, "\n",external_value, "\n", self.current_state)
+            del external_value
             
             
 

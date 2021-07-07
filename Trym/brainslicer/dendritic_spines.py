@@ -24,6 +24,10 @@ class DendriticSpineMaasNode(NeuralStructureNode):
         self.static_state.update({
             "time_constant": self.create_distribution_values(time_constant_distribution, population_size)
         })
+
+        self.next_state.update({
+            "synaptic_output_summed": np.zeros((population_size[0], population_size[1]))
+        })
     
     def compute_next(self):
         time_step = self.parameters["time_step"]
@@ -31,6 +35,7 @@ class DendriticSpineMaasNode(NeuralStructureNode):
         time_since_last_spike = self.current_state["time_since_last_spike"]
         last_input_since_spike = self.current_state["last_input_since_spike"]
         next_synaptic_output = self.next_state["synaptic_output"]
+        next_synaptic_output_summed = self.next_state["synaptic_output_summed"]
 
         time_constant = self.static_state["time_constant"]
 
@@ -42,6 +47,12 @@ class DendriticSpineMaasNode(NeuralStructureNode):
             last_input_since_spike * np.exp(-time_since_last_spike/ time_constant)
         )
         next_synaptic_output += synaptic_input
+
+        # to reduce the amount of data that needs to be transferred to somas, the 3d arrays are summed to 2d arrays
+        np.copyto(
+            next_synaptic_output_summed,
+            np.sum(next_synaptic_output, 2)
+        )
 
 
         current_input_mask = synaptic_input == 0

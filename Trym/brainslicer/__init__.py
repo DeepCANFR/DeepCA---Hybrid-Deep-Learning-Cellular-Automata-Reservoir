@@ -43,6 +43,10 @@ from .help_functions import UniqueIdDictCreator
 
 from .graphs import DistributedGraph
 
+from .graph_functions import copy_graph_genome
+
+from .inputs import StaticInput
+
 
 VERSION = "0.0.1"
 
@@ -84,6 +88,10 @@ class Brainslicer():
         self.IzhikevichNode = IzhikevichNode
 
         self.CircuitEquationNode = CircuitEquationNode
+
+        self.copy_graph_genome = copy_graph_genome
+
+        self.StaticInput = StaticInput
 
 
 

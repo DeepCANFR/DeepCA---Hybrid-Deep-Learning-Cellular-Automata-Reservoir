@@ -5,7 +5,7 @@ import pickle
 import brainslicer as rm
 import matplotlib.pyplot as plt
 #import tensorflow as tf
-from scipy import stats
+#from scipy import stats
 import dask
 from dask.distributed import Client, LocalCluster
 #from dask.distributed import performance_report
