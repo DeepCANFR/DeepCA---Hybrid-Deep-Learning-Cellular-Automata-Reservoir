@@ -8,7 +8,7 @@ import numpy as np
 
 width = 50
 height_fig = 25
-fargs_list = [(a,) for a in [90]]
+fargs_list = [(a,) for a in [110]]
 
 init = np.random.randint(2, size=(width, 1)).astype(np.float64)
 init_m = np.array(init, copy=True)
@@ -74,7 +74,6 @@ for i, j in np.ndindex(im_ca.shape):
 
 
 
-# plt.rcParams['image.cmap'] = 'flag'
 cmap = colors.ListedColormap(["white", "lightgray", "darkred"])
 fig, axes = plt.subplots(1, 3)
 
@@ -89,11 +88,10 @@ axes[2].axis('off')
 
 # plt.title(f'Rule {fargs_list[0][0]}, {height_fig} step')
 
-# plt.show()
+plt.show()
 
 
-fig.savefig(f'diff.png', bbox_inches="tight", dpi=300)
+# fig.savefig(f'diff.png', bbox_inches="tight", dpi=300)
 
 
 
-plt.connect('close_event', exp.close())
