@@ -389,7 +389,7 @@ class Soma_AS_with_projection_weights(Soma_AS):
     
                 self.template_rolls = np.array(self.template_rolls)
     
-                self.weights = np.abs(np.random.normal(weight_mean, weight_SD, self.spike_array.shape))
+            self.weights = np.abs(np.random.normal(weight_mean, weight_SD, self.spike_array.shape))
         def send_spikes_to_synapses(self, inputs):
             print(inputs.shape)
             if self.max_level <= 1:
@@ -514,7 +514,8 @@ class Conways_game_of_life(Automata_2d):
         rule_4 = (self.universe == 0) * (neighbourhood_sum == 3)
         
         self.universe = rule_2 + rule_4
-        
+     
+  
     
 class MEA:
     '''

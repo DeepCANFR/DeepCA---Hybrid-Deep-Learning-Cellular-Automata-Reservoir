@@ -1,0 +1,6 @@
+*.npy
+*.pyc
+*.pkl
+*.lock
+*.npz
+Tryms framework/__pycache__
