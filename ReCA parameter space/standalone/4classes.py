@@ -62,6 +62,6 @@ axes[1][0].set_title("Class 3: Chaotic", fontdict=csfont)
 axes[1][1].imshow(ca_4, cmap="binary")
 axes[1][1].axis('off')
 axes[1][1].set_title("Class 4: Complex", fontdict=csfont)
-plt.show()
+# plt.show()
 
-# fig.savefig(f'wolfram4.png', bbox_inches="tight", dpi=300)
+fig.savefig(f'wolfram4.png', bbox_inches="tight", dpi=300)
