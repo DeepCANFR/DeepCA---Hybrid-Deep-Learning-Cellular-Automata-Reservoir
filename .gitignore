@@ -4,3 +4,5 @@
 *.lock
 *.npz
 Tryms framework/__pycache__
+
+.idea/
