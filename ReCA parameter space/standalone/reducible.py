@@ -36,39 +36,50 @@ def getCA(rule, width, hight, init):
 
 
 width = 200
-height = 120
+height = 100
+ca_rule = 90
+
 single = np.zeros((width, 1)).astype(np.float64)
 single[0][0] = 1.0
+ca_1 = getCA(ca_rule, width, height, single)
+truth = []
+for i in range(0, 1):
+    ca_2 = getCA(ca_rule, width, height, "random")
+    singlePattern = ca_1[-1]
+    randomInit = ca_2[0]
+    pattern = np.zeros(width).astype(np.float64)
+    for cellIndex in range(0, width):
+        shape = np.roll(singlePattern, cellIndex)
+        if randomInit[cellIndex] == 1.0:
+            pattern = pattern + shape
+    (((pattern % 2) - 1) * -1)
+    print("matching:")
+    print((ca_2[-1] == (pattern % 2)).all())
+    truth.append((ca_2[-1] == (pattern % 2)).all())
 
-ca_1 = getCA(90, width, height, single)
-ca_2 = getCA(90, width, height, "random")
-singlePattern = ca_1[-1]
-randomInit = ca_2[0]
-pattern = np.zeros(width).astype(np.float64)
-for cellIndex in range(0, width):
-    shape = np.roll(singlePattern, cellIndex)
-    if randomInit[cellIndex] == 1.0:
-        pattern = pattern + shape
-print("matching:")
-print((ca_2[-1] == (pattern % 2)).all())
+print(truth)
+ca_3 = [ca_2[-1], pattern % 2]
 
-
-ca_3 = [randomInit, pattern % 2]
-
-fig, axes = plt.subplots(1, 3)
-plt.subplots_adjust(wspace=0.1, hspace=0.2)
 csfont = {'fontname': 'calibri'}
+fig = plt.figure()
+gs = fig.add_gridspec(2, 2)
 
-axes[0].imshow(ca_1, cmap="binary")
-axes[0].axis('off')
-axes[0].set_title("CA central", fontdict=csfont)
-axes[1].imshow(ca_2, cmap="binary")
-axes[1].axis('off')
-axes[1].set_title("CA random", fontdict=csfont)
-axes[2].imshow(ca_3, cmap="binary")
-axes[2].axis('off')
-axes[2].set_title("CA predicted", fontdict=csfont)
+plt.subplots_adjust(wspace=0.1, hspace=0.2)
+
+ax1 = fig.add_subplot(gs[0:1, 0:1])
+ax1.imshow(ca_1, cmap="binary")
+ax1.set_title("CA central", fontdict=csfont)
+ax1.axis('off')
+
+ax2 = fig.add_subplot(gs[0:1, 1:2])
+ax2.imshow(ca_2, cmap="binary")
+ax2.set_title("CA random", fontdict=csfont)
+ax2.axis('off')
+
+ax3 = fig.add_subplot(gs[1:2, 0:2])
+ax3.imshow(ca_3, cmap="binary")
+ax3.set_title("CA random last step and predicted", fontdict=csfont)
+ax3.axis('off')
 
 plt.show()
-
 # fig.savefig(f'reducible.png', bbox_inches="tight", dpi=300)

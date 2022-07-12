@@ -22,3 +22,8 @@ for i in range(0, 256):
 print("left set:", ignores_left)
 print("central set:", ignores_central)
 print("right set:", ignores_right)
+
+
+for i in range(0, 16):
+    binary = helper.int_to_binary_string(i, 4)
+    print(i, binary)
