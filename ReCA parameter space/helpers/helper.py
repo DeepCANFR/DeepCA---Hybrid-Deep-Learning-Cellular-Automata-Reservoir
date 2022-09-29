@@ -7,6 +7,10 @@ def int_to_binary_string(int_number, size):
     return left_pad_array(binary_array, size)
 
 
+def binary_string_to_int(binary_string):
+    s = map(str, binary_string)
+    return int("".join(s), 2)
+
 def left_pad_array(arr, size):
     array = np.zeros(size, dtype=int)
     array[-len(arr):] = arr
